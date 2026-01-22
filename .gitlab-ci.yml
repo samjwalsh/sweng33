@@ -34,8 +34,7 @@ build:
   stage: build
   image: node:18
   script:
-    - corepack enable
-    - corepack prepare pnpm@latest --activate
+    - npm i -g pnpm@latest
     - pnpm install --frozen-lockfile
     - pnpm build
   artifacts:
