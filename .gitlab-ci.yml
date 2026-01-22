@@ -11,13 +11,6 @@ stages:
 - deploy
 - review
 - dast
-- staging
-- canary
-- production
-- incremental rollout 10%
-- incremental rollout 25%
-- incremental rollout 50%
-- incremental rollout 100%
 - performance
 - cleanup
 - secret-detection
@@ -29,3 +22,17 @@ variables:
   SECRET_DETECTION_ENABLED: 'true'
 secret_detection:
   stage: secret-detection
+
+build:
+  stage: build
+  image: node:18
+  script:
+    - corepack enable
+    - corepack prepare pnpm@latest --activate
+    - pnpm install --frozen-lockfile
+    - pnpm build
+  artifacts:
+    paths:
+      - .next
+  rules:
+    - when: always
