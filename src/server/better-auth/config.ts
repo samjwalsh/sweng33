@@ -5,6 +5,7 @@ import { env } from "@/env";
 import { db } from "@/server/db";
 
 export const auth = betterAuth({
+  baseURL: env.BETTER_AUTH_URL,
   database: drizzleAdapter(db, {
     provider: "pg", // or "pg" or "mysql"
   }),
@@ -12,14 +13,10 @@ export const auth = betterAuth({
     enabled: true,
   },
   socialProviders: {
-    microsoft: {
-      clientId: process.env.MICROSOFT_CLIENT_ID as string,
-      clientSecret: process.env.MICROSOFT_CLIENT_SECRET as string,
-      // Optional
-      tenantId: 'common',
-      authority: "https://login.microsoftonline.com", // Authentication authority URL
-      prompt: "select_account", // Forces account selection
-    },
+    google: {
+      clientId: env.GOOGLE_CLIENT_ID,
+      clientSecret: env.GOOGLE_CLIENT_SECRET,
+    }
   },
 });
 

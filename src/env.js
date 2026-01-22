@@ -9,8 +9,9 @@ export const env = createEnv({
   server: {
     BETTER_AUTH_SECRET:
       process.env.NODE_ENV === "production" ? z.string() : z.string().optional(),
-    MICROSOFT_CLIENT_ID: z.string(),
-    MICROSOFT_CLIENT_SECRET: z.string(),
+    BETTER_AUTH_URL: z.string().url(),
+    GOOGLE_CLIENT_ID: z.string(),
+    GOOGLE_CLIENT_SECRET: z.string(),
     DATABASE_URL: z.string().url(),
     NODE_ENV: z
       .enum(["development", "test", "production"])
@@ -32,8 +33,9 @@ export const env = createEnv({
    */
   runtimeEnv: {
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
-    MICROSOFT_CLIENT_ID: process.env.BETTER_AUTH_GITHUB_CLIENT_ID,
-    MICROSOFT_CLIENT_SECRET: process.env.BETTER_AUTH_GITHUB_CLIENT_SECRET,
+    BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
     DATABASE_URL: process.env.DATABASE_URL,
     NODE_ENV: process.env.NODE_ENV,
   },
