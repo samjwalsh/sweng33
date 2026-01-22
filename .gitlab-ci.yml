@@ -12,9 +12,9 @@ before_script:
     if ! command -v npm >/dev/null 2>&1; then
       echo "npm not found, installing Node locally into $CI_PROJECT_DIR/.node"
       NODE_VERSION=18.20.0
-      curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" -o node.tar.xz
+      curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.gz" -o node.tar.gz
       mkdir -p .node
-      tar -xJf node.tar.xz -C .node --strip-components=1
+      tar -xzf node.tar.gz -C .node --strip-components=1
       export PATH="$CI_PROJECT_DIR/.node/bin:$PATH"
     fi
   - npm --version
