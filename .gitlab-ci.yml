@@ -9,9 +9,11 @@ stages:
 - build
 - test
 - deploy
-- staging
 - review
 - dast
+- staging
+- canary
+- production
 - performance
 - cleanup
 - secret-detection
