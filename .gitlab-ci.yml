@@ -19,7 +19,7 @@ variables:
 
 default:
   services:
-    - name: postgres:15-alpine
+    - name: postgres:15
       alias: postgres
 
 before_script:
