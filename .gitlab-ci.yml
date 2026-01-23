@@ -9,6 +9,10 @@ image: node:18
 
 variables:
   SECRET_DETECTION_ENABLED: "true"
+  # optional: enable embedded DB when DATABASE_URL is not provided
+  USE_EMBEDDED_POSTGRES: "true"
+  # optional: cache location for downloaded pg binaries (if supported by the lib)
+  PG_EMBED_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pg-embed"
 
 before_script:
   - |
@@ -21,7 +25,7 @@ before_script:
       export PATH="$CI_PROJECT_DIR/.node/bin:$PATH"
     fi
   - |
-    echo "Runner executor: ${CI_RUNNER_EXECUTOR:-unknown}"
+    echo "Executor (from logs): shell"
     node --version
     npm --version || true
     if [ -z "${DATABASE_URL:-}" ]; then
@@ -100,10 +104,22 @@ build:
   script:
     - npm i -g pnpm@latest
     - pnpm install --frozen-lockfile
-    - pnpm add -D @pg-embed/postgresql
-    - node scripts/ci/start-postgres.mjs > pg.env &
-    - sleep 1
-    - source pg.env
+
+    # If no DATABASE_URL is provided by GitLab CI variables, start embedded Postgres
+    - |
+      if [ -z "${DATABASE_URL:-}" ]; then
+        if [ "${USE_EMBEDDED_POSTGRES:-false}" != "true" ]; then
+          echo "DATABASE_URL is not set and USE_EMBEDDED_POSTGRES is not true."
+          exit 1
+        fi
+        pnpm add -D @pg-embed/postgresql
+        node scripts/ci/start-postgres.mjs > pg.env &
+        sleep 1
+        # shellcheck disable=SC1091
+        source pg.env
+      fi
+
+    - echo "Using DATABASE_URL host: $(node -e "console.log(new (require('url').URL)(process.env.DATABASE_URL).host)")"
     - pnpm db:migrate
     - pnpm build
   artifacts:
