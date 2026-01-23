@@ -8,19 +8,7 @@
 image: node:18
 
 variables:
-  POSTGRES_DB: webapp_test
-  POSTGRES_USER: webapp
-  POSTGRES_PASSWORD: webapp
-  POSTGRES_HOST: postgres
-  POSTGRES_PORT: "5432"
-  DATABASE_URL: postgres://webapp:webapp@postgres:5432/webapp_test
-  PGPASSWORD: webapp
   SECRET_DETECTION_ENABLED: "true"
-
-default:
-  services:
-    - name: postgres:15
-      alias: postgres
 
 before_script:
   - |
@@ -34,32 +22,55 @@ before_script:
     fi
   - |
     echo "Runner executor: ${CI_RUNNER_EXECUTOR:-unknown}"
-    echo "POSTGRES_HOST=$POSTGRES_HOST POSTGRES_PORT=$POSTGRES_PORT"
     node --version
     npm --version || true
-    if command -v getent >/dev/null 2>&1; then
-      echo "DNS lookup for $POSTGRES_HOST:";
-      if ! getent hosts "$POSTGRES_HOST"; then
-        echo "Host '$POSTGRES_HOST' did not resolve. This usually means GitLab CI 'services:' are not running (common with the shell executor)."
-        echo "Fix: use a Docker/Kubernetes executor for this job, or remove 'services:' and point DATABASE_URL at an external Postgres reachable from the runner."
-        exit 1
-      fi
-    else
-      node -e "require('dns').lookup(process.env.POSTGRES_HOST,(err)=>{if(err){console.error('DNS lookup failed for '+process.env.POSTGRES_HOST+': '+err.message);process.exit(1)}process.exit(0)})" \
-        || (echo "This usually means GitLab CI 'services:' are not running (common with the shell executor). Use a Docker/Kubernetes executor or point DATABASE_URL at an external Postgres." && exit 1)
+    if [ -z "${DATABASE_URL:-}" ]; then
+      echo "DATABASE_URL is not set. On the shell executor, GitLab CI cannot start a Postgres service container."
+      echo "Fix: add DATABASE_URL as a GitLab CI/CD variable pointing at a reachable Postgres (e.g. managed DB / VM), or switch to a Docker/Kubernetes executor and use 'services: postgres'."
+      exit 1
     fi
 
-    max_attempts=60
-    attempt=1
-    while [ "$attempt" -le "$max_attempts" ]; do
-      node -e "const net=require('net');const client=net.connect({host:process.env.POSTGRES_HOST,port:Number(process.env.POSTGRES_PORT)},()=>{client.end();process.exit(0);});client.on('error',()=>process.exit(1));" && break
-      echo "Waiting for Postgres... (${attempt}/${max_attempts})"
-      attempt=$((attempt + 1))
-      sleep 2
-    done
+    node - <<'NODE'
+    const net = require('net');
+    const { URL } = require('url');
 
-    node -e "const net=require('net');const client=net.connect({host:process.env.POSTGRES_HOST,port:Number(process.env.POSTGRES_PORT)},()=>{client.end();process.exit(0);});client.on('error',()=>process.exit(1));" \
-      || (echo "Postgres service is not reachable. If CI_RUNNER_EXECUTOR is 'shell', GitLab 'services:' are ignored and no Postgres container is started. Use a Docker/Kubernetes executor (or point DATABASE_URL at an external Postgres for CI)." && exit 1)
+    const databaseUrl = process.env.DATABASE_URL;
+    const maxAttempts = 60;
+    const delayMs = 2000;
+
+    const url = new URL(databaseUrl);
+    const host = url.hostname;
+    const port = Number(url.port || 5432);
+
+    let attempt = 1;
+    const tryOnce = () => new Promise((resolve) => {
+      const client = net.connect({ host, port }, () => {
+        client.end();
+        resolve(true);
+      });
+      client.on('error', () => resolve(false));
+    });
+
+    (async () => {
+      // Optional DNS sanity check
+      try {
+        require('dns').lookup(host);
+      } catch {
+        // ignore; we'll rely on connect retries
+      }
+
+      while (attempt <= maxAttempts) {
+        const ok = await tryOnce();
+        if (ok) process.exit(0);
+        process.stdout.write(`Waiting for Postgres at ${host}:${port}... (${attempt}/${maxAttempts})\n`);
+        attempt++;
+        await new Promise((r) => setTimeout(r, delayMs));
+      }
+
+      console.error(`Postgres is not reachable at ${host}:${port}. Check DATABASE_URL and runner network access.`);
+      process.exit(1);
+    })();
+    NODE
   - npm --version
 stages:
 - build
