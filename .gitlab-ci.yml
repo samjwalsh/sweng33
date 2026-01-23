@@ -33,14 +33,9 @@ before_script:
       export PATH="$CI_PROJECT_DIR/.node/bin:$PATH"
     fi
   - |
-    if ! command -v psql >/dev/null 2>&1; then
-      apt-get update -y
-      apt-get install -y --no-install-recommends postgresql-client
-      rm -rf /var/lib/apt/lists/*
-    fi
-  - |
-    until PGPASSWORD="$POSTGRES_PASSWORD" pg_isready --host="$POSTGRES_HOST" --port="$POSTGRES_PORT" --username="$POSTGRES_USER" --dbname="$POSTGRES_DB"; do
-      echo "Waiting for Postgres..."
+    until node -e "const net=require('net');const client=net.connect({host:process.env.POSTGRES_HOST,port:Number(process.env.POSTGRES_PORT)},()=>{client.end();process.exit(0);});client.on('error',()=>process.exit(1));"
+    do
+      echo 'Waiting for Postgres...'
       sleep 2
     done
   - npm --version
