@@ -1,31 +1,62 @@
-# You can override the included template(s) by including variable overrides
-# SAST customization: https://docs.gitlab.com/ee/user/application_security/sast/#customizing-the-sast-settings
-# Secret Detection customization: https://docs.gitlab.com/user/application_security/secret_detection/pipeline/configure
-# Dependency Scanning customization: https://docs.gitlab.com/ee/user/application_security/dependency_scanning/#customizing-the-dependency-scanning-settings
-# Container Scanning customization: https://docs.gitlab.com/ee/user/application_security/container_scanning/#customizing-the-container-scanning-settings
-# Note that environment variables can be set in several places
-# See https://docs.gitlab.com/ee/ci/variables/#cicd-variable-precedence
+image: node:20
+
 stages:
-- build
-- test
-- deploy
-- review
-- dast
-- staging
-- canary
-- production
-- incremental rollout 10%
-- incremental rollout 25%
-- incremental rollout 50%
-- incremental rollout 100%
-- performance
-- cleanup
-- secret-detection
-sast:
-  stage: test
-include:
-- template: Auto-DevOps.gitlab-ci.yml
+  - test
+  - build
+
 variables:
-  SECRET_DETECTION_ENABLED: 'true'
-secret_detection:
-  stage: secret-detection
+  NEXT_TELEMETRY_DISABLED: "1"
+  SKIP_ENV_VALIDATION: "1"
+  PNPM_STORE_PATH: "$CI_PROJECT_DIR/.pnpm-store"
+  BETTER_AUTH_SECRET: "$CI_COMMIT_SHA"
+  BETTER_AUTH_URL: "http://localhost:3000"
+  GOOGLE_CLIENT_ID: "ci"
+  GOOGLE_CLIENT_SECRET: "ci"
+
+cache:
+  key:
+    files:
+      - pnpm-lock.yaml
+  paths:
+    - .pnpm-store/
+
+default:
+  before_script:
+    - |
+      set -euo pipefail
+
+      if ! command -v node >/dev/null 2>&1 || ! command -v npm >/dev/null 2>&1; then
+        NODE_VERSION="20.11.1"
+        echo "node/npm not found. Installing Node.js v${NODE_VERSION} locally into $CI_PROJECT_DIR/.node"
+        curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.gz" -o node.tar.gz
+        mkdir -p .node
+        tar -xzf node.tar.gz -C .node --strip-components=1
+        export PATH="$CI_PROJECT_DIR/.node/bin:$PATH"
+      fi
+
+      node --version
+      npm --version
+
+      if command -v corepack >/dev/null 2>&1; then
+        corepack enable
+        corepack prepare pnpm@10.28.1 --activate
+      else
+        npm i -g pnpm@10.28.1
+      fi
+      pnpm --version
+    - mkdir -p "$PNPM_STORE_PATH"
+    - pnpm config set store-dir "$PNPM_STORE_PATH"
+    - pnpm install --frozen-lockfile
+
+test:
+  stage: test
+  script:
+    - pnpm check
+    - pnpm test --run
+
+build:
+  stage: build
+  needs:
+    - test
+  script:
+    - pnpm build
