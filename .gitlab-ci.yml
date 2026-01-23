@@ -39,7 +39,14 @@ before_script:
     npm --version || true
     if command -v getent >/dev/null 2>&1; then
       echo "DNS lookup for $POSTGRES_HOST:";
-      getent hosts "$POSTGRES_HOST" || true
+      if ! getent hosts "$POSTGRES_HOST"; then
+        echo "Host '$POSTGRES_HOST' did not resolve. This usually means GitLab CI 'services:' are not running (common with the shell executor)."
+        echo "Fix: use a Docker/Kubernetes executor for this job, or remove 'services:' and point DATABASE_URL at an external Postgres reachable from the runner."
+        exit 1
+      fi
+    else
+      node -e "require('dns').lookup(process.env.POSTGRES_HOST,(err)=>{if(err){console.error('DNS lookup failed for '+process.env.POSTGRES_HOST+': '+err.message);process.exit(1)}process.exit(0)})" \
+        || (echo "This usually means GitLab CI 'services:' are not running (common with the shell executor). Use a Docker/Kubernetes executor or point DATABASE_URL at an external Postgres." && exit 1)
     fi
 
     max_attempts=60
