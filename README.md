@@ -5,3 +5,4 @@ This repo will contain the Next.js project that will provide the UI for users to
 - Sam Walsh
 - Stephen Harpur 
 - Bobbi Beattie
+- Omar Abdalla
