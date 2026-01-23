@@ -24,14 +24,23 @@ default:
   before_script:
     - |
       set -euo pipefail
+
+      if ! command -v node >/dev/null 2>&1 || ! command -v npm >/dev/null 2>&1; then
+        NODE_VERSION="20.11.1"
+        echo "node/npm not found. Installing Node.js v${NODE_VERSION} locally into $CI_PROJECT_DIR/.node"
+        curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.gz" -o node.tar.gz
+        mkdir -p .node
+        tar -xzf node.tar.gz -C .node --strip-components=1
+        export PATH="$CI_PROJECT_DIR/.node/bin:$PATH"
+      fi
+
+      node --version
+      npm --version
+
       if command -v corepack >/dev/null 2>&1; then
         corepack enable
         corepack prepare pnpm@10.28.1 --activate
       else
-        if ! command -v npm >/dev/null 2>&1; then
-          echo "npm not found (shell executor ignores image:). Install Node.js/npm on the runner, or switch to a Docker executor."
-          exit 1
-        fi
         npm i -g pnpm@10.28.1
       fi
       pnpm --version
