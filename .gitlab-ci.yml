@@ -33,11 +33,26 @@ before_script:
       export PATH="$CI_PROJECT_DIR/.node/bin:$PATH"
     fi
   - |
-    until node -e "const net=require('net');const client=net.connect({host:process.env.POSTGRES_HOST,port:Number(process.env.POSTGRES_PORT)},()=>{client.end();process.exit(0);});client.on('error',()=>process.exit(1));"
-    do
-      echo 'Waiting for Postgres...'
+    echo "Runner executor: ${CI_RUNNER_EXECUTOR:-unknown}"
+    echo "POSTGRES_HOST=$POSTGRES_HOST POSTGRES_PORT=$POSTGRES_PORT"
+    node --version
+    npm --version || true
+    if command -v getent >/dev/null 2>&1; then
+      echo "DNS lookup for $POSTGRES_HOST:";
+      getent hosts "$POSTGRES_HOST" || true
+    fi
+
+    max_attempts=60
+    attempt=1
+    while [ "$attempt" -le "$max_attempts" ]; do
+      node -e "const net=require('net');const client=net.connect({host:process.env.POSTGRES_HOST,port:Number(process.env.POSTGRES_PORT)},()=>{client.end();process.exit(0);});client.on('error',()=>process.exit(1));" && break
+      echo "Waiting for Postgres... (${attempt}/${max_attempts})"
+      attempt=$((attempt + 1))
       sleep 2
     done
+
+    node -e "const net=require('net');const client=net.connect({host:process.env.POSTGRES_HOST,port:Number(process.env.POSTGRES_PORT)},()=>{client.end();process.exit(0);});client.on('error',()=>process.exit(1));" \
+      || (echo "Postgres service is not reachable. If CI_RUNNER_EXECUTOR is 'shell', GitLab 'services:' are ignored and no Postgres container is started. Use a Docker/Kubernetes executor (or point DATABASE_URL at an external Postgres for CI)." && exit 1)
   - npm --version
 stages:
 - build
