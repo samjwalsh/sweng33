@@ -22,8 +22,20 @@ cache:
 
 default:
   before_script:
-    - corepack enable
-    - corepack prepare pnpm@10.28.1 --activate
+    - |
+      set -euo pipefail
+      if command -v corepack >/dev/null 2>&1; then
+        corepack enable
+        corepack prepare pnpm@10.28.1 --activate
+      else
+        if ! command -v npm >/dev/null 2>&1; then
+          echo "npm not found (shell executor ignores image:). Install Node.js/npm on the runner, or switch to a Docker executor."
+          exit 1
+        fi
+        npm i -g pnpm@10.28.1
+      fi
+      pnpm --version
+    - mkdir -p "$PNPM_STORE_PATH"
     - pnpm config set store-dir "$PNPM_STORE_PATH"
     - pnpm install --frozen-lockfile
 
