@@ -97,10 +97,13 @@ secret_detection:
 
 build:
   stage: build
-  image: node:18
   script:
     - npm i -g pnpm@latest
     - pnpm install --frozen-lockfile
+    - pnpm add -D @pg-embed/postgresql
+    - node scripts/ci/start-postgres.mjs > pg.env &
+    - sleep 1
+    - source pg.env
     - pnpm db:migrate
     - pnpm build
   artifacts:
