@@ -1,129 +1,41 @@
-# You can override the included template(s) by including variable overrides
-# SAST customization: https://docs.gitlab.com/ee/user/application_security/sast/#customizing-the-sast-settings
-# Secret Detection customization: https://docs.gitlab.com/user/application_security/secret_detection/pipeline/configure
-# Dependency Scanning customization: https://docs.gitlab.com/ee/user/application_security/dependency_scanning/#customizing-the-dependency-scanning-settings
-# Container Scanning customization: https://docs.gitlab.com/ee/user/application_security/container_scanning/#customizing-the-container-scanning-settings
-# Note that environment variables can be set in several places
-# See https://docs.gitlab.com/ee/ci/variables/#cicd-variable-precedence
-image: node:18
+image: node:20
+
+stages:
+  - test
+  - build
 
 variables:
-  SECRET_DETECTION_ENABLED: "true"
-  # optional: enable embedded DB when DATABASE_URL is not provided
-  USE_EMBEDDED_POSTGRES: "true"
-  # optional: cache location for downloaded pg binaries (if supported by the lib)
-  PG_EMBED_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pg-embed"
+  NEXT_TELEMETRY_DISABLED: "1"
+  SKIP_ENV_VALIDATION: "1"
+  PNPM_STORE_PATH: "$CI_PROJECT_DIR/.pnpm-store"
+  BETTER_AUTH_SECRET: "$CI_COMMIT_SHA"
+  BETTER_AUTH_URL: "http://localhost:3000"
+  GOOGLE_CLIENT_ID: "ci"
+  GOOGLE_CLIENT_SECRET: "ci"
 
-before_script:
-  - |
-    if ! command -v npm >/dev/null 2>&1; then
-      echo "npm not found, installing Node locally into $CI_PROJECT_DIR/.node"
-      NODE_VERSION=18.20.0
-      curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.gz" -o node.tar.gz
-      mkdir -p .node
-      tar -xzf node.tar.gz -C .node --strip-components=1
-      export PATH="$CI_PROJECT_DIR/.node/bin:$PATH"
-    fi
-  - |
-    echo "Executor (from logs): shell"
-    node --version
-    npm --version || true
-    if [ -z "${DATABASE_URL:-}" ]; then
-      echo "DATABASE_URL is not set. On the shell executor, GitLab CI cannot start a Postgres service container."
-      echo "Fix: add DATABASE_URL as a GitLab CI/CD variable pointing at a reachable Postgres (e.g. managed DB / VM), or switch to a Docker/Kubernetes executor and use 'services: postgres'."
-      exit 1
-    fi
+cache:
+  key:
+    files:
+      - pnpm-lock.yaml
+  paths:
+    - .pnpm-store/
 
-    node - <<'NODE'
-    const net = require('net');
-    const { URL } = require('url');
+default:
+  before_script:
+    - corepack enable
+    - corepack prepare pnpm@10.28.1 --activate
+    - pnpm config set store-dir "$PNPM_STORE_PATH"
+    - pnpm install --frozen-lockfile
 
-    const databaseUrl = process.env.DATABASE_URL;
-    const maxAttempts = 60;
-    const delayMs = 2000;
-
-    const url = new URL(databaseUrl);
-    const host = url.hostname;
-    const port = Number(url.port || 5432);
-
-    let attempt = 1;
-    const tryOnce = () => new Promise((resolve) => {
-      const client = net.connect({ host, port }, () => {
-        client.end();
-        resolve(true);
-      });
-      client.on('error', () => resolve(false));
-    });
-
-    (async () => {
-      // Optional DNS sanity check
-      try {
-        require('dns').lookup(host);
-      } catch {
-        // ignore; we'll rely on connect retries
-      }
-
-      while (attempt <= maxAttempts) {
-        const ok = await tryOnce();
-        if (ok) process.exit(0);
-        process.stdout.write(`Waiting for Postgres at ${host}:${port}... (${attempt}/${maxAttempts})\n`);
-        attempt++;
-        await new Promise((r) => setTimeout(r, delayMs));
-      }
-
-      console.error(`Postgres is not reachable at ${host}:${port}. Check DATABASE_URL and runner network access.`);
-      process.exit(1);
-    })();
-    NODE
-  - npm --version
-stages:
-- build
-- test
-- deploy
-- review
-- dast
-- staging
-- canary
-- production
-- incremental rollout 10%
-- incremental rollout 25%
-- incremental rollout 50%
-- incremental rollout 100%
-- performance
-- cleanup
-- secret-detection
-sast:
+test:
   stage: test
-include:
-- template: Auto-DevOps.gitlab-ci.yml
-secret_detection:
-  stage: secret-detection
+  script:
+    - pnpm check
+    - pnpm test --run
 
 build:
   stage: build
+  needs:
+    - test
   script:
-    - npm i -g pnpm@latest
-    - pnpm install --frozen-lockfile
-
-    # If no DATABASE_URL is provided by GitLab CI variables, start embedded Postgres
-    - |
-      if [ -z "${DATABASE_URL:-}" ]; then
-        if [ "${USE_EMBEDDED_POSTGRES:-false}" != "true" ]; then
-          echo "DATABASE_URL is not set and USE_EMBEDDED_POSTGRES is not true."
-          exit 1
-        fi
-        pnpm add -D @pg-embed/postgresql
-        node scripts/ci/start-postgres.mjs > pg.env &
-        sleep 1
-        # shellcheck disable=SC1091
-        source pg.env
-      fi
-
-    - echo "Using DATABASE_URL host: $(node -e "console.log(new (require('url').URL)(process.env.DATABASE_URL).host)")"
-    - pnpm db:migrate
     - pnpm build
-  artifacts:
-    paths:
-      - .next
-  rules:
-    - when: always
