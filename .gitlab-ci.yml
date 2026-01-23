@@ -7,18 +7,20 @@
 # See https://docs.gitlab.com/ee/ci/variables/#cicd-variable-precedence
 image: node:18
 
+variables:
+  POSTGRES_DB: webapp_test
+  POSTGRES_USER: webapp
+  POSTGRES_PASSWORD: webapp
+  POSTGRES_HOST: postgres
+  POSTGRES_PORT: "5432"
+  DATABASE_URL: postgres://webapp:webapp@postgres:5432/webapp_test
+  PGPASSWORD: webapp
+  SECRET_DETECTION_ENABLED: "true"
+
 default:
   services:
     - name: postgres:15-alpine
       alias: postgres
-  variables:
-    POSTGRES_DB: webapp_test
-    POSTGRES_USER: webapp
-    POSTGRES_PASSWORD: webapp
-    POSTGRES_HOST: postgres
-    POSTGRES_PORT: "5432"
-    DATABASE_URL: postgres://webapp:webapp@postgres:5432/webapp_test
-    PGPASSWORD: webapp
 
 before_script:
   - |
@@ -62,8 +64,6 @@ sast:
   stage: test
 include:
 - template: Auto-DevOps.gitlab-ci.yml
-variables:
-  SECRET_DETECTION_ENABLED: 'true'
 secret_detection:
   stage: secret-detection
 
