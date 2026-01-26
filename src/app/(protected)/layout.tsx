@@ -11,7 +11,7 @@ export default async function ProtectedLayout({
   const session = await getSession();
 
   if (!session) {
-    redirect("/login");
+    redirect("/signin");
   }
 
   return (
