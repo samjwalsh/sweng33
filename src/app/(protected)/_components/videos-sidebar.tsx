@@ -19,9 +19,9 @@ export default function VideosSidebar({
         <Separator className="my-2" />
       </div>
       <div className="flex w-full flex-col gap-2 overflow-scroll pb-2">
-        {videos.map((video) => {
+        {videos.map((video, i) => {
           return (
-            <Card className="no-scrollbar mx-2 min-h-24 p-2">
+            <Card className="no-scrollbar mx-2 min-h-24 p-2" key={i}>
               <div>{video.title}</div>
             </Card>
           );
