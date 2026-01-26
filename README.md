@@ -47,6 +47,10 @@ pnpm dev
 
 If everything is configured correctly, the app should be available at the URL printed in the terminal (commonly `http://localhost:3000`).
 
+# Style
+The project is using shadcn for components and tailwind for styling.
+I recommend you use the components from https://ui.shadcn.com/docs/components wherever possible.
+You can install a component by running `pnpm dlx shadcn@latest add component_name`, they have examples of this under every component on the site.
 
 # Contributors
 - Sam Walsh
