@@ -1,19 +1,10 @@
-import { AppSidebar } from "@/app/_components/app-sidebar";
-
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { getSession } from "@/server/better-auth/server";
 import { redirect } from "next/navigation";
+import ProtectedPageClient from "./_components/protected-page-client";
 
 export default async function Page() {
   const session = await getSession();
   if (!session) redirect("/signin");
 
-  return (
-    <SidebarProvider>
-      <AppSidebar session={session} />
-      <SidebarInset>
-        <div>main area</div>
-      </SidebarInset>
-    </SidebarProvider>
-  );
+  return <ProtectedPageClient session={session} />;
 }
