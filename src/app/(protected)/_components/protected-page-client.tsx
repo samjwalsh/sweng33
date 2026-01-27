@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { sampleVideos, type Video } from "@/lib/video-type";
+import { LanguageCode } from "@/lib/languages";
 import type { Session } from "@/server/better-auth/client";
 
 import { AppSidebar } from "./app-sidebar";
@@ -35,15 +36,17 @@ export default function ProtectedPageClient({ session }: { session: Session }) {
     const newVideo: Video = {
       id: crypto.randomUUID(),
       title: "Untitled video",
-      blob: null,
-      uploadedAt: new Date(),
+      createdById: session.user.id,
+      createdAt: new Date(),
+      blob: "pending",
       status: "uploading",
-      sourceLanguage: "French",
+      sourceLanguage: LanguageCode.French,
+      destLanguage: LanguageCode.English,
     };
 
     setVideos((current) => [newVideo, ...current]);
     setActiveVideoId(newVideo.id);
-  }, []);
+  }, [session.user.id]);
 
   const activeVideo = useMemo(
     () => videos.find((video) => video.id === activeVideoId) ?? null,
