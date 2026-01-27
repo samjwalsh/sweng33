@@ -36,7 +36,8 @@ If you already have a `.env.example`/template in the project, copy that first an
 ## 4) Push the database schema
 With Docker running and your `.env` configured:
 ```bash
-pnpm db:push
+pnpm db:generate
+pnpm db:migrate
 ```
 
 ## 5) Run the app
