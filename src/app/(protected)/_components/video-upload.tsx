@@ -41,5 +41,5 @@ export default function VideoUpload() {
 }
 
 function CreateVideo(video: Video) {
-  return video.toString();
+  return "upload video";
 }
