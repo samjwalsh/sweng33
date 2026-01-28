@@ -8,6 +8,7 @@ import type { Session } from "@/server/better-auth/client";
 import { AppSidebar } from "./app-sidebar";
 import VideoViewer from "./video-viewer";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import VideoUpload from "./video-upload";
 
 export default function ProtectedPageClient({ session }: { session: Session }) {
   const [videos, setVideos] = useState<Video[]>([]);
@@ -32,22 +33,6 @@ export default function ProtectedPageClient({ session }: { session: Session }) {
     };
   }, []);
 
-  const handleCreateVideo = useCallback(() => {
-    const newVideo: Video = {
-      id: crypto.randomUUID(),
-      title: "Untitled video",
-      createdById: session.user.id,
-      createdAt: new Date(),
-      blob: "pending",
-      status: "uploading",
-      sourceLanguage: LanguageCode.French,
-      destLanguage: LanguageCode.English,
-    };
-
-    setVideos((current) => [newVideo, ...current]);
-    setActiveVideoId(newVideo.id);
-  }, [session.user.id]);
-
   const activeVideo = useMemo(
     () => videos.find((video) => video.id === activeVideoId) ?? null,
     [videos, activeVideoId],
@@ -62,10 +47,7 @@ export default function ProtectedPageClient({ session }: { session: Session }) {
         session={session}
       />
       <SidebarInset>
-        <VideoViewer
-          activeVideo={activeVideo}
-          onCreateVideo={handleCreateVideo}
-        />
+        <VideoUpload />
       </SidebarInset>
     </SidebarProvider>
   );
