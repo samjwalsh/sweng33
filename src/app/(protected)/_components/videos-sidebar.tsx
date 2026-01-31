@@ -7,6 +7,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import type { Video } from "@/lib/video-type";
+import { Badge } from "@/components/ui/badge";
 export default function VideosSidebar({
   videos,
   activeVideo,
@@ -35,7 +36,7 @@ export default function VideosSidebar({
           {videos.map((video, i) => (
             <Card
               key={i}
-              className={`group hover:bg-accent mx-2 overflow-hidden p-2 transition-all duration-200 ${
+              className={`group hover:bg-accent mx-2 flex flex-col gap-2 overflow-hidden p-2 transition-all duration-200 ${
                 activeVideo?.id === video.id
                   ? "bg-accent ring-primary/30 ring-2"
                   : ""
@@ -50,16 +51,19 @@ export default function VideosSidebar({
                 />
               </div>
 
-              <CardHeader className="space-y-0 px-2 pt-1 pb-2">
+              <CardHeader className="px-2">
                 <CardTitle className="truncate text-sm leading-tight">
                   {video.title}
                 </CardTitle>
                 <CardDescription className="text-xs">
                   Created: {new Date(video.createdAt).toLocaleDateString()}
                 </CardDescription>
-                <CardDescription className="text-xs">
-                  {video.sourceLanguage.toUpperCase()} {"-> "}
-                  {video.destLanguage.toUpperCase()}
+                <CardDescription className="flex flex-row justify-between text-xs">
+                  <div className="mt-1">
+                    {video.sourceLanguage.toUpperCase()} {"-> "}
+                    {video.destLanguage.toUpperCase()}
+                  </div>
+                  <Badge>{video.status}</Badge>
                 </CardDescription>
               </CardHeader>
             </Card>
