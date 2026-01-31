@@ -62,10 +62,7 @@ export default function ProtectedPageClient({ session }: { session: Session }) {
         session={session}
       />
       <SidebarInset>
-        <VideoViewer
-          activeVideo={activeVideo}
-          onCreateVideo={handleCreateVideo}
-        />
+        {activeVideo && <VideoViewer video={activeVideo} />}
       </SidebarInset>
     </SidebarProvider>
   );
