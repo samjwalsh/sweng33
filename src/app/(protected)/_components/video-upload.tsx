@@ -85,8 +85,8 @@ export default function VideoUpload() {
 
     const videoInput: CreateVideoInput = {
       title: title.trim(),
-      sourceLanguage: sourceLanguage as LanguageCode,
-      destLanguage: destLanguage as LanguageCode,
+      sourceLanguage,
+      destLanguage,
       status: "ready",
       blob: "placeholder-blob",
     };
