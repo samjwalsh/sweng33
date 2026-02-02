@@ -4,6 +4,7 @@ import type { Video } from "@/lib/video-type";
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge";
+import { Spinner } from "@/components/ui/spinner"
 /*
 
 Main thing is that there is a prominent download button for the video, but you would probably expect to be able to see all of the info about it like when you uploaded it and maybe a player for the video
@@ -57,10 +58,10 @@ export default function VideoViewer({ video }: { video: Video }) {
         </div>
       </div>
       {/* Right Side: Translation Progress, Export, etc... */}  
-      <div style={{ flex: 1, paddingLeft: "20px", fontSize: "14px", color: "#333" }}>
+      <div style={{ flex: 1, paddingLeft: "20px", fontSize: "14px", color: "#333"}}>
         <Field className="w-full max-w-sm">
           <FieldLabel htmlFor="progress-upload">
-            <span style={{fontSize: "20px"}}>Translation Progress:</span>
+            <span style={{fontSize: "20px", fontWeight: "bold"}}>Translation Progress:</span>
             <span className="ml-auto">66%</span>
 
             {/* TO DO -- Need Progess(int) for progress bar and status for badge */}
@@ -73,7 +74,7 @@ export default function VideoViewer({ video }: { video: Video }) {
             style={{
               width: "100%",
               height: "10px",
-              backgroundColor: "#e0e0e0", // Light gray background
+              backgroundColor: "#e0e0e0", 
               borderRadius: "5px",
               overflow: "hidden",
               position: "relative",
@@ -83,11 +84,46 @@ export default function VideoViewer({ video }: { video: Video }) {
               style={{
                 width: "66%", // Matches the value prop
                 height: "100%",
-                backgroundColor: "#4caf50", // Green progress
+                backgroundColor: "#4caf50", 
               }}
             ></div>
           </Progress>
         </Field>
+
+        <h3 style={{ fontSize: "20px", fontWeight: "bold", marginTop: "40px", marginBottom: "10px" }}>
+          Status:
+        </h3>
+        {// Badges for status 
+        }
+        <div className="flex justify-between flex-wrap">
+          <Badge variant={(video.status == "queued")?"outline":"ghost"}>Queued</Badge>
+
+          <Badge
+            variant={(video.status == "processing") ? "outline" : "ghost"}
+            className={video.status === "processing" ? "bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300": ""}
+          >
+            Processing
+            {video.status === "processing" && (
+              <Spinner className="ml-2 inline-block align-middle" data-icon="inline-end" />
+            )}
+          </Badge>
+          <Badge 
+            variant={(video.status == "ready")?"outline":"ghost"} 
+            className={(video.status== "ready")?"bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300":""}
+          >
+            Ready
+          </Badge>
+          <Badge 
+            variant={(video.status == "failed")?"outline":"ghost"}
+            className={(video.status === "failed")? "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300": ""}
+          >
+            Failed
+          </Badge>
+        </div>
+
+        <h3 style={{ fontSize: "20px", fontWeight: "bold", marginTop: "40px", marginBottom: "10px" }}>
+          Export:
+        </h3>
 
       </div>
     </div>
