@@ -12,7 +12,6 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import type { Session } from "@/server/better-auth/client";
-import { Separator } from "@/components/ui/separator";
 import type { Video } from "@/lib/video-type";
 import VideosSidebar from "./videos-sidebar";
 

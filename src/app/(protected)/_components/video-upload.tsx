@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-import { LanguageName, languageValues } from "@/lib/languages";
+import { type LanguageName, languageValues } from "@/lib/languages";
 import type { Video } from "@/lib/video-type";
 
 import { Button } from "@/components/ui/button";
