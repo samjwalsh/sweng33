@@ -1,5 +1,5 @@
 import type { videos } from "@/server/db/schema";
-import { LanguageCode } from "@/lib/languages";
+import { LanguageName } from "@/lib/languages";
 
 export type Video = typeof videos.$inferSelect;
 
@@ -11,8 +11,8 @@ export const sampleVideos: Video[] = [
 		createdAt: new Date(),
 		blob: "placeholder-blob",
 		status: "ready",
-		sourceLanguage: LanguageCode.English,
-		destLanguage: LanguageCode.Spanish,
+		sourceLanguage: LanguageName.English,
+		destLanguage: LanguageName.Spanish,
 	},
 	{
 		id: "video-2",
@@ -21,8 +21,8 @@ export const sampleVideos: Video[] = [
 		createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2),
 		blob: "placeholder-blob",
 		status: "processing",
-		sourceLanguage: LanguageCode.German,
-		destLanguage: LanguageCode.English,
+		sourceLanguage: LanguageName.German,
+		destLanguage: LanguageName.English,
 	},
 	{
 		id: "video-3",
@@ -31,8 +31,8 @@ export const sampleVideos: Video[] = [
 		createdAt: new Date(Date.now() - 1000 * 60 * 60 * 6),
 		blob: "placeholder-blob",
 		status: "ready",
-		sourceLanguage: LanguageCode.French,
-		destLanguage: LanguageCode.PortugueseBrazil,
+		sourceLanguage: LanguageName.French,
+		destLanguage: LanguageName.Portuguese,
 	},
 	{
 		id: "video-4",
@@ -41,8 +41,8 @@ export const sampleVideos: Video[] = [
 		createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24),
 		blob: "placeholder-blob",
 		status: "queued",
-		sourceLanguage: LanguageCode.Japanese,
-		destLanguage: LanguageCode.English,
+		sourceLanguage: LanguageName.Japanese,
+		destLanguage: LanguageName.English,
 	},
 	{
 		id: "video-5",
@@ -51,8 +51,8 @@ export const sampleVideos: Video[] = [
 		createdAt: new Date(Date.now() - 1000 * 60 * 60 * 36),
 		blob: "placeholder-blob",
 		status: "failed",
-		sourceLanguage: LanguageCode.Spanish,
-		destLanguage: LanguageCode.French,
+		sourceLanguage: LanguageName.Spanish,
+		destLanguage: LanguageName.French,
 	},
 	{
 		id: "video-6",
@@ -61,8 +61,8 @@ export const sampleVideos: Video[] = [
 		createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48),
 		blob: "placeholder-blob",
 		status: "ready",
-		sourceLanguage: LanguageCode.Italian,
-		destLanguage: LanguageCode.English,
+		sourceLanguage: LanguageName.Italian,
+		destLanguage: LanguageName.English,
 	},
 	{
 		id: "video-7",
@@ -71,8 +71,8 @@ export const sampleVideos: Video[] = [
 		createdAt: new Date(Date.now() - 1000 * 60 * 60 * 60),
 		blob: "placeholder-blob",
 		status: "processing",
-		sourceLanguage: LanguageCode.English,
-		destLanguage: LanguageCode.German,
+		sourceLanguage: LanguageName.English,
+		destLanguage: LanguageName.German,
 	},
 	{
 		id: "video-8",
@@ -81,8 +81,8 @@ export const sampleVideos: Video[] = [
 		createdAt: new Date(Date.now() - 1000 * 60 * 60 * 72),
 		blob: "placeholder-blob",
 		status: "queued",
-		sourceLanguage: LanguageCode.Korean,
-		destLanguage: LanguageCode.English,
+		sourceLanguage: LanguageName.Korean,
+		destLanguage: LanguageName.English,
 	},
 	{
 		id: "video-9",
@@ -91,8 +91,8 @@ export const sampleVideos: Video[] = [
 		createdAt: new Date(Date.now() - 1000 * 60 * 60 * 84),
 		blob: "placeholder-blob",
 		status: "ready",
-		sourceLanguage: LanguageCode.PortuguesePortugal,
-		destLanguage: LanguageCode.Spanish,
+		sourceLanguage: LanguageName.Portuguese,
+		destLanguage: LanguageName.Spanish,
 	},
 	{
 		id: "video-10",
@@ -101,8 +101,8 @@ export const sampleVideos: Video[] = [
 		createdAt: new Date(Date.now() - 1000 * 60 * 60 * 96),
 		blob: "placeholder-blob",
 		status: "failed",
-		sourceLanguage: LanguageCode.Russian,
-		destLanguage: LanguageCode.English,
+		sourceLanguage: LanguageName.Russian,
+		destLanguage: LanguageName.English,
 	},
 	{
 		id: "video-11",
@@ -111,8 +111,8 @@ export const sampleVideos: Video[] = [
 		createdAt: new Date(Date.now() - 1000 * 60 * 60 * 108),
 		blob: "placeholder-blob",
 		status: "ready",
-		sourceLanguage: LanguageCode.Dutch,
-		destLanguage: LanguageCode.English,
+		sourceLanguage: LanguageName.German,
+		destLanguage: LanguageName.English,
 	},
 	{
 		id: "video-12",
@@ -121,8 +121,8 @@ export const sampleVideos: Video[] = [
 		createdAt: new Date(Date.now() - 1000 * 60 * 60 * 120),
 		blob: "placeholder-blob",
 		status: "processing",
-		sourceLanguage: LanguageCode.Hindi,
-		destLanguage: LanguageCode.English,
+		sourceLanguage: LanguageName.English,
+		destLanguage: LanguageName.German,
 	},
 	{
 		id: "video-13",
@@ -131,8 +131,8 @@ export const sampleVideos: Video[] = [
 		createdAt: new Date(Date.now() - 1000 * 60 * 60 * 132),
 		blob: "placeholder-blob",
 		status: "queued",
-		sourceLanguage: LanguageCode.Turkish,
-		destLanguage: LanguageCode.German,
+		sourceLanguage: LanguageName.Russian,
+		destLanguage: LanguageName.German,
 	},
 	{
 		id: "video-14",
@@ -141,8 +141,8 @@ export const sampleVideos: Video[] = [
 		createdAt: new Date(Date.now() - 1000 * 60 * 60 * 144),
 		blob: "placeholder-blob",
 		status: "ready",
-		sourceLanguage: LanguageCode.Swedish,
-		destLanguage: LanguageCode.English,
+		sourceLanguage: LanguageName.French,
+		destLanguage: LanguageName.English,
 	},
 	{
 		id: "video-15",
@@ -151,7 +151,7 @@ export const sampleVideos: Video[] = [
 		createdAt: new Date(Date.now() - 1000 * 60 * 60 * 156),
 		blob: "placeholder-blob",
 		status: "processing",
-		sourceLanguage: LanguageCode.Polish,
-		destLanguage: LanguageCode.French,
+		sourceLanguage: LanguageName.Spanish,
+		destLanguage: LanguageName.French,
 	},
 ];

@@ -10,8 +10,9 @@ import {
 } from "@azure/storage-blob";
 import { randomUUID } from "crypto";
 import path from "path";
-import { languageCodeValues } from "@/lib/languages";
+import { languageValues } from "@/lib/languages";
 import { videos } from "@/server/db/schema";
+import { desc, eq } from "drizzle-orm";
 
 const storageCredential = new StorageSharedKeyCredential(
 	env.AZURE_STORAGE_ACCOUNT,
@@ -26,6 +27,13 @@ const containerClient = blobServiceClient.getContainerClient(
 );
 
 export const videoRouter = createTRPCRouter({
+	getMyVideos: protectedProcedure.query(async ({ ctx }) => {
+		return ctx.db
+			.select()
+			.from(videos)
+			.where(eq(videos.createdById, ctx.session.user.id))
+			.orderBy(desc(videos.createdAt));
+	}),
 	createUpload: protectedProcedure
 		.input(
 			z.object({
@@ -66,8 +74,8 @@ export const videoRouter = createTRPCRouter({
 			z.object({
 				blobName: z.string().min(1),
 				title: z.string().min(1),
-				sourceLanguage: z.enum(languageCodeValues),
-				destLanguage: z.enum(languageCodeValues),
+				sourceLanguage: z.enum(languageValues),
+				destLanguage: z.enum(languageValues),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
