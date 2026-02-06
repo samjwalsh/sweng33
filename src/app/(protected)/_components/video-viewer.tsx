@@ -1,10 +1,9 @@
 "use client";
 
 import type { Video } from "@/lib/video-type";
-import { Field, FieldLabel } from "@/components/ui/field"
-import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge";
-import { Spinner } from "@/components/ui/spinner"
+import { Spinner } from "@/components/ui/spinner";
+import { Button } from "@/components/ui/button";
 /*
 
 Main thing is that there is a prominent download button for the video, but you would probably expect to be able to see all of the info about it like when you uploaded it and maybe a player for the video
@@ -47,7 +46,7 @@ export default function VideoViewer({ video }: { video: Video }) {
         </div>
 
         {/* Video Title */}
-        <h1 style={{ marginTop: "30px", fontSize: "40px"}}>{video.title}</h1>
+        <h1 style={{ marginTop: "30px", fontSize: "40px", fontWeight: "bold"}}>{video.title}</h1>
 
         {/* Video Details */}
         <div style={{ marginTop: "10px", fontSize: "14px", color: "#555" }}>
@@ -59,42 +58,11 @@ export default function VideoViewer({ video }: { video: Video }) {
       </div>
       {/* Right Side: Translation Progress, Export, etc... */}  
       <div style={{ flex: 1, paddingLeft: "20px", fontSize: "14px", color: "#333"}}>
-        <Field className="w-full max-w-sm">
-          <FieldLabel htmlFor="progress-upload">
-            <span style={{fontSize: "20px", fontWeight: "bold"}}>Translation Progress:</span>
-            <span className="ml-auto">66%</span>
-
-            {/* TO DO -- Need Progess(int) for progress bar and status for badge */}
-
-          </FieldLabel>
-          {/* Progress Bar */}
-          <Progress
-            value={66}
-            id="progress-upload"
-            style={{
-              width: "100%",
-              height: "10px",
-              backgroundColor: "#e0e0e0", 
-              borderRadius: "5px",
-              overflow: "hidden",
-              position: "relative",
-            }}
-          >
-            <div
-              style={{
-                width: "66%", // Matches the value prop
-                height: "100%",
-                backgroundColor: "#4caf50", 
-              }}
-            ></div>
-          </Progress>
-        </Field>
-
+        
         <h3 style={{ fontSize: "20px", fontWeight: "bold", marginTop: "40px", marginBottom: "10px" }}>
-          Status:
+          Translation Status:
         </h3>
-        {// Badges for status 
-        }
+        {/* Badges for translation status */}
         <div className="flex justify-between flex-wrap">
           <Badge variant={(video.status == "queued")?"outline":"ghost"}>Queued</Badge>
 
@@ -121,10 +89,26 @@ export default function VideoViewer({ video }: { video: Video }) {
           </Badge>
         </div>
 
-        <h3 style={{ fontSize: "20px", fontWeight: "bold", marginTop: "40px", marginBottom: "10px" }}>
-          Export:
-        </h3>
-
+        
+        {/* Export button: enabled only when video status is ready*/}
+        <div style={{marginTop: "40px"}}>
+          <Button
+            type = "button"
+            variant="secondary"
+            disabled={video.status !== "ready"}
+            className="w-full h-12 rounded-md border border-gray-300 bg-gray-200 text-gray-900 shadow-sm hover:bg-gray-300 hover:shadow disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:shadow-none disabled:cursor-not-allowed"
+            onClick={() => {
+              console.log("Export requested for video", video.id);
+            }}
+            >
+              Export
+          </Button>
+          {video.status !== "ready" && (
+            <p style={{ marginTop: "8px", color: "#666", fontSize: "12px"}}>
+              Export will be available when the translation is <strong>Ready</strong>
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
