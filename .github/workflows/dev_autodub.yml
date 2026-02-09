@@ -11,6 +11,7 @@ on:
 
 jobs:
   build:
+    environment: Dev
     runs-on: ubuntu-latest
     permissions:
       contents: read #This is required for actions/checkout
