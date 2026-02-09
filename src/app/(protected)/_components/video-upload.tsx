@@ -1,50 +1,9 @@
-/*
-  Here the user expects to be able to upload a video to our service.
-  At the time being there is no actual way to upload the video so just focus on creating a component that is
-  able to call the function createVideo.
-
-  I imagine we'll end up with a page with some box in the middle for uploading the file, and some fields the user
-  has to fill in, like the title, source language and dest language.
-  I have used a type called an enum for the languages which should let you easily swap between the word 'English'
-  and the language code 'en' (which is what gets stored in the database)
-
-  Video objects look like this:
-  {
-    id: "video-1",
-    title: "Sample video",
-    createdById: "user-1",
-    createdAt: new Date(),
-    blob: "placeholder-blob",
-    status: "ready",
-    sourceLanguage: LanguageCode.English, // 'en'
-    destLanguage: LanguageCode.Spanish // 'es'
-  }
-
-  So you will need to collect most of this data from the user.
-  You don't have to worry about the id or createById, or createdAt, these will be filled in automatically later on.
-
-  The user will upload a video by dragging and dropping it or selecting a file on their pc, you can look into a
-  thing called 'react-dropzone' for this, should make things easier, but I still need to think a bit more about how
-  the file will actually be uploaded.
-  It will be something like user uploads file -> call a function -> function returns the blob string.
-  The blob string is a url to the video on our servers, so you also don't need to worry about this for now.
-
-  You should be using shadcn components wherever possible.
-
-  Please text me if you need help I know I haven't explained this well enough for you to do it by yourself.
-
-*/
-
 "use client";
 
 import * as React from "react";
 
+import { type LanguageName, languageValues } from "@/lib/languages";
 import type { Video } from "@/lib/video-type";
-import {
-  LanguageCode,
-  languageCodeValues,
-  languageCodeToName,
-} from "@/lib/languages";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,41 +16,129 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useDropzone } from "react-dropzone";
+import { api } from "@/trpc/react";
+import { BlockBlobClient } from "@azure/storage-blob";
 
-type CreateVideoInput = Omit<Video, "id" | "createdById" | "createdAt">;
-
-export default function VideoUpload() {
+export default function VideoUpload({
+  onUploadComplete,
+}: {
+  onUploadComplete?: (video: Video) => void;
+}) {
   const [title, setTitle] = React.useState("");
   const [file, setFile] = React.useState<File | null>(null);
-  const [sourceLanguage, setSourceLanguage] = React.useState<LanguageCode | "">(
+  const [sourceLanguage, setSourceLanguage] = React.useState<LanguageName | "">(
     "",
   );
-  const [destLanguage, setDestLanguage] = React.useState<LanguageCode | "">("");
+  const [destLanguage, setDestLanguage] = React.useState<LanguageName | "">("");
+  const [uploadError, setUploadError] = React.useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = React.useState(0);
+  const [uploadStatus, setUploadStatus] = React.useState<
+    "idle" | "uploading" | "uploaded" | "error"
+  >("idle");
+  const [blobName, setBlobName] = React.useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(
+    null,
+  );
+
+  const createUpload = api.video.createUpload.useMutation();
+  const finalizeUpload = api.video.finalizeUpload.useMutation();
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     multiple: false,
     accept: { "video/*": [] },
     onDrop: (acceptedFiles) => {
       const selectedFile = acceptedFiles?.[0] ?? null;
+      if (!selectedFile) return;
       setFile(selectedFile);
+      void startUpload(selectedFile);
     },
   });
 
-  function handleCreateVideo() {
+  async function startUpload(selectedFile: File) {
+    setUploadError(null);
+    setSuccessMessage(null);
+    setUploadProgress(0);
+    setUploadStatus("uploading");
+    setBlobName(null);
+
+    try {
+      const { uploadUrl, blobName: serverBlobName } =
+        await createUpload.mutateAsync({
+          fileName: selectedFile.name,
+          contentType: selectedFile.type || "application/octet-stream",
+        });
+
+      const blobClient = new BlockBlobClient(uploadUrl);
+      await blobClient.uploadBrowserData(selectedFile, {
+        blockSize: 4 * 1024 * 1024,
+        maxSingleShotSize: 4 * 1024 * 1024,
+        concurrency: 4,
+        blobHTTPHeaders: {
+          blobContentType: selectedFile.type || "application/octet-stream",
+        },
+        onProgress: (event) => {
+          if (!selectedFile.size) return;
+          const percent = Math.round(
+            (event.loadedBytes / selectedFile.size) * 100,
+          );
+          setUploadProgress(Math.min(100, Math.max(0, percent)));
+        },
+      });
+
+      setBlobName(serverBlobName);
+      setUploadProgress(100);
+      setUploadStatus("uploaded");
+    } catch (error) {
+      setUploadStatus("error");
+      setUploadError(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong while uploading.",
+      );
+    }
+  }
+
+  async function handleCreateVideo() {
+    setUploadError(null);
+    setSuccessMessage(null);
     if (!file) return;
     if (!title.trim()) return;
     if (!sourceLanguage || !destLanguage) return;
     if (sourceLanguage === destLanguage) return;
+    if (uploadStatus === "uploading") return;
+    if (uploadStatus !== "uploaded" || !blobName) return;
 
-    const videoInput: CreateVideoInput = {
-      title: title.trim(),
-      sourceLanguage,
-      destLanguage,
-      status: "ready",
-      blob: "placeholder-blob",
-    };
+    try {
+      const createdVideo = await finalizeUpload.mutateAsync({
+        blobName,
+        title: title.trim(),
+        sourceLanguage,
+        destLanguage,
+      });
 
-    createVideo(videoInput);
+      if (!createdVideo) {
+        throw new Error("Upload saved, but no video was returned.");
+      }
+
+      setSuccessMessage(
+        `"${createdVideo.title}" has been added and is now processing.`,
+      );
+      onUploadComplete?.(createdVideo);
+
+      setTitle("");
+      setFile(null);
+      setSourceLanguage("");
+      setDestLanguage("");
+      setUploadProgress(0);
+      setUploadStatus("idle");
+      setBlobName(null);
+    } catch (error) {
+      setUploadError(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong while uploading.",
+      );
+    }
   }
 
   return (
@@ -122,8 +169,11 @@ export default function VideoUpload() {
         {/* upload box */}
         <div className="mx-auto mt-10 w-full max-w-5xl">
           <div
-            {...getRootProps()}
-            className="hover:border-muted-foreground/40 hover:bg-muted/20 flex min-h-[360px] cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed p-12 text-center transition-colors"
+            {...getRootProps({
+              disabled:
+                uploadStatus === "uploading" || finalizeUpload.isPending,
+            })}
+            className="hover:border-muted-foreground/40 hover:bg-muted/20 flex min-h-90 cursor-pointer flex-col items-center justify-center rounded-xl border-4 border-dashed p-12 text-center transition-colors"
           >
             <input {...getInputProps()} />
 
@@ -145,27 +195,47 @@ export default function VideoUpload() {
               </>
             )}
           </div>
+          <div className="mt-4 space-y-2">
+            <div className="bg-muted h-2 w-full overflow-hidden rounded-full">
+              <div
+                className="bg-primary h-full transition-all"
+                style={{ width: `${uploadProgress}%` }}
+              />
+            </div>
+            <div className="text-muted-foreground flex justify-between text-xs">
+              <span>
+                {uploadStatus === "uploading"
+                  ? "Uploading..."
+                  : uploadStatus === "uploaded"
+                    ? "Upload complete"
+                    : uploadStatus === "error"
+                      ? "Upload failed"
+                      : "No upload yet"}
+              </span>
+              <span>{uploadProgress}%</span>
+            </div>
+          </div>
         </div>
 
         {/* language wrapper */}
         <div className="mx-auto mt-8 w-full max-w-5xl">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
             {/* source language */}
-            <div className="space-y-2 md:relative md:left-[-40px]">
+            <div className="space-y-2 md:relative">
               <Label className="font-medium">Source language</Label>
               <Select
                 value={sourceLanguage}
-                onValueChange={(languageCode) =>
-                  setSourceLanguage(languageCode as LanguageCode)
+                onValueChange={(languageName) =>
+                  setSourceLanguage(languageName as LanguageName)
                 }
               >
                 <SelectTrigger className="h-11 w-full">
                   <SelectValue placeholder="Select source" />
                 </SelectTrigger>
                 <SelectContent>
-                  {languageCodeValues.map((code) => (
-                    <SelectItem key={code} value={code}>
-                      {languageCodeToName[code]}
+                  {languageValues.map((name) => (
+                    <SelectItem key={name} value={name}>
+                      {name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -173,21 +243,21 @@ export default function VideoUpload() {
             </div>
 
             {/* destination language */}
-            <div className="space-y-2 md:relative md:left-[40px]">
+            <div className="space-y-2 md:relative">
               <Label className="font-medium">Destination language</Label>
               <Select
                 value={destLanguage}
-                onValueChange={(languageCode) =>
-                  setDestLanguage(languageCode as LanguageCode)
+                onValueChange={(languageName) =>
+                  setDestLanguage(languageName as LanguageName)
                 }
               >
                 <SelectTrigger className="h-11 w-full">
                   <SelectValue placeholder="Select destination" />
                 </SelectTrigger>
                 <SelectContent>
-                  {languageCodeValues.map((code) => (
-                    <SelectItem key={code} value={code}>
-                      {languageCodeToName[code]}
+                  {languageValues.map((name) => (
+                    <SelectItem key={name} value={name}>
+                      {name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -199,14 +269,32 @@ export default function VideoUpload() {
         {/* create video */}
         <div className="mt-10">
           <div className="mx-auto flex w-full max-w-5xl justify-center">
-            <Button onClick={handleCreateVideo}>Create video</Button>
+            <Button
+              onClick={handleCreateVideo}
+              disabled={
+                finalizeUpload.isPending ||
+                uploadStatus !== "uploaded" ||
+                !title.trim() ||
+                !sourceLanguage ||
+                !destLanguage ||
+                sourceLanguage === destLanguage
+              }
+            >
+              {finalizeUpload.isPending ? "Saving..." : "Upload video"}
+            </Button>
           </div>
+          {uploadError ? (
+            <p className="text-destructive mt-4 text-center text-sm">
+              {uploadError}
+            </p>
+          ) : null}
+          {successMessage ? (
+            <div className="mx-auto mt-4 w-full max-w-5xl rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-center text-sm text-emerald-700">
+              {successMessage}
+            </div>
+          ) : null}
         </div>
       </div>
     </div>
   );
-}
-
-function createVideo(input: CreateVideoInput) {
-  console.log("createVideo called with:", input);
 }

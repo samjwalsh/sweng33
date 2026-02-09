@@ -1,18 +1,17 @@
 import { relations } from "drizzle-orm";
 import {
   boolean,
-  index,
   pgEnum,
   pgTable,
   pgTableCreator,
   text,
   timestamp,
 } from "drizzle-orm/pg-core";
-import { languageCodeValues } from "@/lib/languages";
+import { languageValues } from "@/lib/languages";
 
 export const createTable = pgTableCreator((name) => `pg-drizzle_${name}`);
 
-export const languageCodeEnum = pgEnum("language_code", languageCodeValues);
+export const languageEnum = pgEnum("language_code", languageValues);
 
 export const videos = createTable(
   "videos",
@@ -23,8 +22,8 @@ export const videos = createTable(
     createdAt: timestamp("created_at").$default(() => new Date()).notNull(),
     blob: text("blob").notNull(),
     status: text("status"),
-    sourceLanguage: languageCodeEnum("source_language").notNull(),
-    destLanguage: languageCodeEnum("dest_language").notNull(),
+    sourceLanguage: languageEnum("source_language").notNull(),
+    destLanguage: languageEnum("dest_language").notNull(),
   })
 )
 
