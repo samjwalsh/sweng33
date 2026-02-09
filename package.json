@@ -48,6 +48,7 @@
     "lucide-react": "^0.562.0",
     "next": "^15.2.3",
     "postgres": "^3.4.4",
+    "radix-ui": "^1.4.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-dropzone": "^14.4.0",
@@ -66,6 +67,7 @@
     "@types/node": "^20.14.10",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "autoprefixer": "^10.4.24",
     "drizzle-kit": "^0.30.5",
     "eslint": "^9.23.0",
     "eslint-config-next": "^15.2.3",
@@ -85,5 +87,14 @@
   "ct3aMetadata": {
     "initVersion": "7.40.0"
   },
-  "packageManager": "pnpm@10.28.1"
+  "packageManager": "pnpm@10.28.1",
+  "description": "This repo will contain the Next.js project that will provide the UI for users to interact with our video translating service.",
+  "main": "eslint.config.js",
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.scss.tcd.ie/sweng-33/webapp.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }
