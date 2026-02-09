@@ -22,13 +22,21 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "24.x"
-          cache: "pnpm"
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
           version: "9"
           run_install: false
+
+      - name: Enable Corepack (pnpm)
+        run: corepack enable
+
+      - name: Configure pnpm cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24.x"
+          cache: "pnpm"
 
       - name: pnpm install, build, and test
         run: |
