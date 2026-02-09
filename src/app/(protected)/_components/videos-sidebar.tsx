@@ -23,7 +23,11 @@ export default function VideosSidebar({
     <div className="flex h-full flex-col overflow-hidden">
       {/*For the "Create New Video Button*/}
       <div className="px-2">
-        <Button variant="default" className="w-full px-2">
+        <Button
+          variant="default"
+          className="w-full px-2"
+          onClick={() => onSelectVideo(null)}
+        >
           Translate New Video
         </Button>
         <Separator className="my-0" />

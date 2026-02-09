@@ -72,6 +72,9 @@ export default function ProtectedPageClient({ session }: { session: Session }) {
       />
       <SidebarInset>
         {activeVideo && <VideoViewer video={activeVideo} />}
+        {!activeVideo && (
+          <VideoUpload onUploadComplete={handleUploadComplete} />
+        )}
       </SidebarInset>
     </SidebarProvider>
   );
