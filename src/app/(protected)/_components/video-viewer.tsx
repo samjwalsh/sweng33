@@ -30,7 +30,7 @@ export default function VideoViewer({ video }: { video: Video }) {
             width: "100%",
             paddingTop: "56.25%", // 16:9 Aspect Ratio
             backgroundColor: "gray",
-            borderRadius: "8px", 
+            borderRadius: "8px",
             overflow: "hidden",
           }}
         >
@@ -52,7 +52,6 @@ export default function VideoViewer({ video }: { video: Video }) {
           </div>
         </div>
 
-        
         {/* Bottom section under the video*/}
         <div
           style={{
@@ -65,27 +64,26 @@ export default function VideoViewer({ video }: { video: Video }) {
             gap: "24px",
           }}
         >
-
           {/* Left: title + other details */}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <h1 style={{ fontSize: "40px", fontWeight: "bold" }}>{video.title}</h1>
+              <h1 style={{ fontSize: "40px", fontWeight: "bold" }}>
+                {video.title}
+              </h1>
 
               {/* Small square action button to edit title and other actions */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button 
+                  <Button
                     variant="outline"
-                    className="h-8 w-8 p-0 flex items-center justify-center"
-                    style={{fontSize:"20px"}}
+                    className="flex h-8 w-8 items-center justify-center p-0"
+                    style={{ fontSize: "20px" }}
                   >
                     ☰
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <DropdownMenuItem>
-                    Edit Video Title
-                  </DropdownMenuItem>
+                  <DropdownMenuItem>Edit Video Title</DropdownMenuItem>
                   <DropdownMenuItem>
                     Change Destination Language
                   </DropdownMenuItem>
@@ -95,15 +93,15 @@ export default function VideoViewer({ video }: { video: Video }) {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-
             </div>
-              
+
             {/* Video Details */}
             <div style={{ marginTop: "10px", fontSize: "14px", color: "#555" }}>
               <p>Uploaded: {new Date(video.createdAt).toLocaleDateString()}</p>
               <p>Source Language: {video.sourceLanguage.toUpperCase()}</p>
-              <p>Destination Language: {video.destLanguage.toLocaleUpperCase()}</p>
-              
+              <p>
+                Destination Language: {video.destLanguage.toLocaleUpperCase()}
+              </p>
             </div>
           </div>
 
@@ -117,12 +115,20 @@ export default function VideoViewer({ video }: { video: Video }) {
               color: "#333",
             }}
           >
-            <h3 style={{ fontSize: "25px", fontWeight: "bold", marginBottom: "10px" }}>
+            <h3
+              style={{
+                fontSize: "25px",
+                fontWeight: "bold",
+                marginBottom: "10px",
+              }}
+            >
               Translation Status:
             </h3>
 
-            <div className="flex justify-between flex-wrap">
-              <Badge variant={video.status == "queued" ? "outline" : "ghost"}>Queued</Badge>
+            <div className="flex flex-wrap justify-between">
+              <Badge variant={video.status == "queued" ? "outline" : "ghost"}>
+                Queued
+              </Badge>
 
               <Badge
                 variant={video.status == "processing" ? "outline" : "ghost"}
@@ -134,7 +140,10 @@ export default function VideoViewer({ video }: { video: Video }) {
               >
                 Processing
                 {video.status === "processing" && (
-                  <Spinner className="ml-2 inline-block align-middle" data-icon="inline-end" />
+                  <Spinner
+                    className="ml-2 inline-block align-middle"
+                    data-icon="inline-end"
+                  />
                 )}
               </Badge>
 
@@ -166,7 +175,7 @@ export default function VideoViewer({ video }: { video: Video }) {
                 type="button"
                 variant="secondary"
                 disabled={video.status !== "ready"}
-                className="w-full h-12 rounded-md border border-gray-300 bg-gray-200 text-gray-900 shadow-sm hover:bg-gray-300 hover:shadow disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:shadow-none disabled:cursor-not-allowed"
+                className="h-12 w-full rounded-md border border-gray-300 bg-gray-200 text-gray-900 shadow-sm hover:bg-gray-300 hover:shadow disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:shadow-none"
                 onClick={() => {
                   console.log("Export requested for video", video.id);
                 }}
@@ -175,8 +184,16 @@ export default function VideoViewer({ video }: { video: Video }) {
               </Button>
 
               {video.status !== "ready" && (
-                <p style={{ marginTop: "8px", color: "#666", fontSize: "12px", textAlign: "center" }}>
-                  Export will be available when the translation is <strong>Ready</strong>
+                <p
+                  style={{
+                    marginTop: "8px",
+                    color: "#666",
+                    fontSize: "12px",
+                    textAlign: "center",
+                  }}
+                >
+                  Export will be available when the translation is{" "}
+                  <strong>Ready</strong>
                 </p>
               )}
             </div>
