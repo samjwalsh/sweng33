@@ -13,6 +13,13 @@ export const createTable = pgTableCreator((name) => `pg-drizzle_${name}`);
 
 export const languageEnum = pgEnum("language_code", languageValues);
 
+export const videoStatusEnum = pgEnum("video_status", [
+  "queued",
+  "processing",
+  "done",
+  "failed",
+]);
+
 export const videos = createTable(
   "videos",
   (d) => ({
@@ -20,8 +27,9 @@ export const videos = createTable(
     title: text("title").notNull(),
     createdById: text("created_by_id").notNull().references(() => user.id),
     createdAt: timestamp("created_at").$default(() => new Date()).notNull(),
-    blob: text("blob").notNull(),
-    status: text("status"),
+    sourceBlob: text("blob").notNull(),
+    completedBlob: text("completed_blob"),
+    status: videoStatusEnum("status").default("queued").notNull(),
     sourceLanguage: languageEnum("source_language").notNull(),
     destLanguage: languageEnum("dest_language").notNull(),
   })

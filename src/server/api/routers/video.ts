@@ -49,7 +49,7 @@ export const videoRouter = createTRPCRouter({
 			const blobClient = containerClient.getBlobClient(blobName);
 
 			const startsOn = new Date(Date.now() - 5 * 60 * 1000);
-			const expiresOn = new Date(Date.now() + 15 * 60 * 1000);
+			const expiresOn = new Date(Date.now() + 24 * 60 * 60 * 1000);
 			const sasToken = generateBlobSASQueryParameters(
 				{
 					containerName: env.AZURE_STORAGE_CONTAINER,
@@ -110,8 +110,8 @@ export const videoRouter = createTRPCRouter({
 					id: randomUUID(),
 					title: input.title.trim(),
 					createdById: ctx.session.user.id,
-					blob: blobClient.url,
-					status: "Queued",
+					sourceBlob: blobClient.url,
+					status: "queued",
 					sourceLanguage: input.sourceLanguage,
 					destLanguage: input.destLanguage,
 				})
