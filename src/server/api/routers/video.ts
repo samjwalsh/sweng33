@@ -110,8 +110,8 @@ export const videoRouter = createTRPCRouter({
 					id: randomUUID(),
 					title: input.title.trim(),
 					createdById: ctx.session.user.id,
-					blob: blobClient.url,
-					status: "Queued",
+					sourceBlob: blobClient.url,
+					status: "queued",
 					sourceLanguage: input.sourceLanguage,
 					destLanguage: input.destLanguage,
 				})

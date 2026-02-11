@@ -147,9 +147,9 @@ export default function VideoViewer({ video }: { video: Video }) {
               </Badge>
 
               <Badge
-                variant={video.status == "ready" ? "outline" : "ghost"}
+                variant={video.status == "done" ? "outline" : "ghost"}
                 className={
-                  video.status == "ready"
+                  video.status == "done"
                     ? "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300"
                     : ""
                 }
@@ -173,7 +173,7 @@ export default function VideoViewer({ video }: { video: Video }) {
               <Button
                 type="button"
                 variant="secondary"
-                disabled={video.status !== "ready"}
+                disabled={video.status !== "done"}
                 className="h-12 w-full rounded-md border border-gray-300 bg-gray-200 text-gray-900 shadow-sm hover:bg-gray-300 hover:shadow disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:shadow-none"
                 onClick={() => {
                   console.log("Export requested for video", video.id);
@@ -182,7 +182,7 @@ export default function VideoViewer({ video }: { video: Video }) {
                 Export
               </Button>
 
-              {video.status !== "ready" && (
+              {video.status !== "done" && (
                 <p
                   style={{
                     marginTop: "8px",
