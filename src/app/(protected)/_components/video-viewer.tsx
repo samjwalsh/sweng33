@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import VideoPlayer from "./video-player";
 /*
 
 Main thing is that there is a prominent download button for the video, but you would probably expect to be able to see all of the info about it like when you uploaded it and maybe a player for the video
@@ -23,34 +24,7 @@ export default function VideoViewer({ video }: { video: Video }) {
     <div style={{ padding: "40px" }}>
       <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
         {/* Gray Box Placeholder for Video */}
-        <div
-          style={{
-            position: "relative",
-            width: "100%",
-            paddingTop: "56.25%", // 16:9 Aspect Ratio
-            backgroundColor: "gray",
-            borderRadius: "8px",
-            overflow: "hidden",
-          }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              width: "100%",
-              height: "100%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "white",
-              fontSize: "24px",
-            }}
-          >
-            Video Placeholder
-          </div>
-        </div>
-
+        <VideoPlayer video={video} />
         {/* Bottom section under the video*/}
         <div
           style={{
