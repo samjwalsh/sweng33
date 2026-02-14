@@ -42,7 +42,7 @@ export function DownloadButton({
   }
 
   return (
-    <Button onClick={onClick} disabled={disabled || isLoading || !blobId}>
+    <Button onClick={onClick} disabled={disabled ?? isLoading ?? !blobId}>
       {isLoading ? "Preparing..." : label}
     </Button>
   );
