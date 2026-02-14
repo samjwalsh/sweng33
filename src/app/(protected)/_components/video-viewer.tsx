@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import VideoPlayer from "./video-player";
+import { DownloadVideo } from "@/app/_components/download-video";
 /*
 
 Main thing is that there is a prominent download button for the video, but you would probably expect to be able to see all of the info about it like when you uploaded it and maybe a player for the video
@@ -144,31 +145,10 @@ export default function VideoViewer({ video }: { video: Video }) {
             </div>
 
             <div style={{ marginTop: "30px" }}>
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={video.status !== "done"}
-                className="h-12 w-full rounded-md border border-gray-300 bg-gray-200 text-gray-900 shadow-sm hover:bg-gray-300 hover:shadow disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:shadow-none"
-                onClick={() => {
-                  console.log("Export requested for video", video.id);
-                }}
-              >
-                Export
-              </Button>
-
-              {video.status !== "done" && (
-                <p
-                  style={{
-                    marginTop: "8px",
-                    color: "#666",
-                    fontSize: "12px",
-                    textAlign: "center",
-                  }}
-                >
-                  Export will be available when the translation is{" "}
-                  <strong>Ready</strong>
-                </p>
-              )}
+              <DownloadVideo
+                completedBlobId={video.completedBlob}
+                originalBlobId={video.sourceBlob}
+              />
             </div>
           </div>
         </div>

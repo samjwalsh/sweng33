@@ -17,8 +17,8 @@ export function DownloadButton({
 }) {
   const [isLoading, setIsLoading] = React.useState(false);
 
-  const getUrl = api.blob.getDownloadUrl.useQuery(
-    { blobId, filename },
+  const getUrl = api.video.getDownloadUrl.useQuery(
+    { blobUrl: blobId, filename },
     { enabled: false },
   );
 

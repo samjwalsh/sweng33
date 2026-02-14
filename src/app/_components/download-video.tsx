@@ -1,21 +1,28 @@
 "use client";
 
 import { DownloadButton } from "./download-button";
+import { Button } from "@/components/ui/button";
 
 export function DownloadVideo({
   completedBlobId,
   originalBlobId,
 }: {
-  completedBlobId: string;
-  originalBlobId?: string;
+  completedBlobId: string | null;
+  originalBlobId: string;
 }) {
   return (
-    <div className="flex gap-2">
-      <DownloadButton
-        blobId={completedBlobId}
-        filename="autodub-completed.mp4"
-        label="Download Translated Video"
-      />
+    <div className="flex flex-col gap-2">
+      {completedBlobId ? (
+        <DownloadButton
+          blobId={completedBlobId}
+          filename="autodub-completed.mp4"
+          label="Download Translated Video"
+        />
+      ) : (
+        <Button disabled className="">
+          Download Translated Video
+        </Button>
+      )}
       {originalBlobId ? (
         <DownloadButton
           blobId={originalBlobId}
