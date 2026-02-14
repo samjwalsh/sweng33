@@ -119,4 +119,45 @@ export const videoRouter = createTRPCRouter({
 
 			return video;
 		}),
+
+	deleteVideo: protectedProcedure
+		.input(z.object({ id: z.string().min(1) }))
+		.mutation(async ({ ctx, input }) => {
+			const video = await ctx.db.query.videos.findFirst({
+				where: (videos, { eq, and }) =>
+					and(
+						eq(videos.id, input.id),
+						eq(videos.createdById, ctx.session.user.id),
+					),
+			});
+
+			if (!video) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Video not found",
+				});
+			}
+
+			const storageUrl = `https://${env.AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${env.AZURE_STORAGE_CONTAINER}/`;
+
+			const deleteBlobIfExists = async (blobUrl: string) => {
+				const blobName = blobUrl.replace(storageUrl, "");
+				const blobClient = containerClient.getBlobClient(blobName);
+				try {
+					await blobClient.deleteIfExists();
+				} catch (error) {
+					console.error(`Error deleting blob ${blobName}:`, error);
+				}
+			};
+
+			await deleteBlobIfExists(video.sourceBlob);
+
+			if (video.completedBlob) {
+				await deleteBlobIfExists(video.completedBlob);
+			}
+
+			await ctx.db.delete(videos).where(eq(videos.id, input.id));
+
+			return { success: true };
+		}),
 });

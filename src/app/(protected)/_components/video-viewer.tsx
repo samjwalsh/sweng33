@@ -19,7 +19,20 @@ The source language and the destination language.
 We should probably also have a button to delete the video if the user is done with it.
 
 */
-export default function VideoViewer({ video }: { video: Video }) {
+export default function VideoViewer({
+  video,
+  onDeleteVideo,
+  isDeleting = false,
+}: {
+  video: Video;
+  onDeleteVideo: (videoId: string) => Promise<void>;
+  isDeleting?: boolean;
+}) {
+  const handleDeleteVideo = async () => {
+    const confirmed = window.confirm("Delete this video?");
+    if (!confirmed) return;
+    await onDeleteVideo(video.id);
+  };
   return (
     <div style={{ padding: "40px" }}>
       <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
@@ -61,8 +74,15 @@ export default function VideoViewer({ video }: { video: Video }) {
                     Change Destination Language
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem variant="destructive">
-                    Delete Video
+                  <DropdownMenuItem
+                    variant="destructive"
+                    disabled={isDeleting}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      void handleDeleteVideo();
+                    }}
+                  >
+                    {isDeleting ? "Deleting..." : "Delete Video"}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
