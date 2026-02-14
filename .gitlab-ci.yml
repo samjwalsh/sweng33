@@ -37,12 +37,14 @@ default:
       node --version
       npm --version
 
-      if command -v corepack >/dev/null 2>&1; then
-        corepack enable
-        corepack prepare pnpm@10.28.1 --activate
-      else
-        npm i -g pnpm@10.28.1
-      fi
+      # Avoid Corepack key-signature issues on some runners by installing pnpm
+            # directly into a project-local npm prefix.
+                  NPM_GLOBAL_PREFIX="$CI_PROJECT_DIR/.npm-global"
+                        mkdir -p "$NPM_GLOBAL_PREFIX"
+                              npm config set prefix "$NPM_GLOBAL_PREFIX"
+                                    export PATH="$NPM_GLOBAL_PREFIX/bin:$PATH"
+                                          npm i -g pnpm@10.28.1
+                                          
       pnpm --version
     - mkdir -p "$PNPM_STORE_PATH"
     - pnpm config set store-dir "$PNPM_STORE_PATH"
