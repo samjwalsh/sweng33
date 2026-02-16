@@ -17,6 +17,7 @@ export default function VideoPlayer({ video }: { video: Video }) {
   const [completedAvailable, setCompletedAvailable] = React.useState(!!completedBlobUrl);
   const [error, setError] = React.useState<string | null>(null);
 
+  // NOTE: do not change blob values/shape — keep exactly as-is
   const completedQ = api.video.getPlaybackUrl.useQuery(
     { blobUrl: completedBlobUrl ?? "" },
     { enabled: false },
@@ -25,6 +26,17 @@ export default function VideoPlayer({ video }: { video: Video }) {
     { blobUrl: originalBlobUrl },
     { enabled: false },
   );
+
+  // Wrap refetch calls in stable callbacks so useEffect deps don't include query objects
+  const refetchCompleted = React.useCallback(async () => {
+    return completedQ.refetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [completedBlobUrl]); // depends on the input changing, not the query object identity
+
+  const refetchOriginal = React.useCallback(async () => {
+    return originalQ.refetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [originalBlobUrl]);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -43,7 +55,8 @@ export default function VideoPlayer({ video }: { video: Video }) {
               setCompletedAvailable(false);
               continue;
             }
-            const res = await completedQ.refetch();
+
+            const res = await refetchCompleted();
             const url = res.data?.url;
             if (cancelled) return;
 
@@ -53,9 +66,10 @@ export default function VideoPlayer({ video }: { video: Video }) {
               setLoading(false);
               return;
             }
+
             setCompletedAvailable(false);
           } else {
-            const res = await originalQ.refetch();
+            const res = await refetchOriginal();
             const url = res.data?.url;
             if (cancelled) return;
 
@@ -81,22 +95,20 @@ export default function VideoPlayer({ video }: { video: Video }) {
     return () => {
       cancelled = true;
     };
-  }, [selected, completedBlobUrl, originalBlobUrl, completedQ, originalQ]);
+  }, [selected, completedBlobUrl, originalBlobUrl, refetchCompleted, refetchOriginal]);
 
   return (
     <div>
-      {/* Keep your 16:9 container */}
       <div
         style={{
           position: "relative",
           width: "100%",
-          paddingTop: "56.25%", // 16:9
+          paddingTop: "56.25%",
           backgroundColor: "black",
           borderRadius: "8px",
           overflow: "hidden",
         }}
       >
-        {/* Real video element */}
         {src ? (
           <video
             key={src}
@@ -113,7 +125,6 @@ export default function VideoPlayer({ video }: { video: Video }) {
               backgroundColor: "black",
             }}
             onError={() => {
-              // fallback if translated fails
               if (selected === "completed") setSelected("original");
               else setError("Video failed to load.");
             }}
@@ -140,7 +151,6 @@ export default function VideoPlayer({ video }: { video: Video }) {
         )}
       </div>
 
-      {/* Version toggle under the player */}
       <div style={{ marginTop: "12px", display: "flex", gap: "8px" }}>
         <Button
           type="button"
