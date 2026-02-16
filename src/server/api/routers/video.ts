@@ -120,6 +120,48 @@ export const videoRouter = createTRPCRouter({
 			return video;
 		}),
 
+	getPlaybackUrl: protectedProcedure
+		.input(
+			z.object({
+			blobUrl: z.string().min(1),
+			}),
+		)
+		.query(async ({ input }) => {
+			const storageUrl = `https://${env.AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${env.AZURE_STORAGE_CONTAINER}/`;
+
+			if (!input.blobUrl.startsWith(storageUrl)) {
+			throw new TRPCError({
+				code: "BAD_REQUEST",
+				message: "Invalid blob URL",
+			});
+			}
+
+			const blobName = input.blobUrl.replace(storageUrl, "");
+			const blobClient = containerClient.getBlobClient(blobName);
+
+			const startsOn = new Date(Date.now() - 5 * 60 * 1000);
+			const expiresOn = new Date(Date.now() + 60 * 60 * 1000);
+
+			const sasToken = generateBlobSASQueryParameters(
+			{
+				containerName: env.AZURE_STORAGE_CONTAINER,
+				blobName,
+				permissions: BlobSASPermissions.parse("r"),
+				startsOn,
+				expiresOn,
+				// important difference from getDownloadUrl:
+				// don't force "attachment" download
+				contentDisposition: "inline",
+			},
+			storageCredential,
+			).toString();
+
+			return {
+			url: `${blobClient.url}?${sasToken}`,
+			};
+		}),
+
+
 	getDownloadUrl: protectedProcedure
 		.input(
 			z.object({
