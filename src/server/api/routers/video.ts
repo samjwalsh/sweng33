@@ -3,10 +3,10 @@ import { env } from "@/env";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import {
-	BlobSASPermissions,
-	BlobServiceClient,
-	StorageSharedKeyCredential,
-	generateBlobSASQueryParameters,
+  BlobSASPermissions,
+  BlobServiceClient,
+  StorageSharedKeyCredential,
+  generateBlobSASQueryParameters,
 } from "@azure/storage-blob";
 import { randomUUID } from "crypto";
 import path from "path";
@@ -15,192 +15,205 @@ import { videos } from "@/server/db/schema";
 import { desc, eq } from "drizzle-orm";
 
 const storageCredential = new StorageSharedKeyCredential(
-	env.AZURE_STORAGE_ACCOUNT,
-	env.AZURE_STORAGE_KEY,
+  env.AZURE_STORAGE_ACCOUNT,
+  env.AZURE_STORAGE_KEY,
 );
 const blobServiceClient = new BlobServiceClient(
-	`https://${env.AZURE_STORAGE_ACCOUNT}.blob.core.windows.net`,
-	storageCredential,
+  `https://${env.AZURE_STORAGE_ACCOUNT}.blob.core.windows.net`,
+  storageCredential,
 );
 const containerClient = blobServiceClient.getContainerClient(
-	env.AZURE_STORAGE_CONTAINER,
+  env.AZURE_STORAGE_CONTAINER,
 );
 
 export const videoRouter = createTRPCRouter({
-	getMyVideos: protectedProcedure.query(async ({ ctx }) => {
-		return ctx.db
-			.select()
-			.from(videos)
-			.where(eq(videos.createdById, ctx.session.user.id))
-			.orderBy(desc(videos.createdAt));
-	}),
-	createUpload: protectedProcedure
-		.input(
-			z.object({
-				fileName: z.string().min(1),
-				contentType: z.string().min(1),
-			}),
-		)
-		.mutation(async ({ ctx, input }) => {
-			await containerClient.createIfNotExists();
+  getMyVideos: protectedProcedure.query(async ({ ctx }) => {
+    return ctx.db
+      .select()
+      .from(videos)
+      .where(eq(videos.createdById, ctx.session.user.id))
+      .orderBy(desc(videos.createdAt));
+  }),
+  createUpload: protectedProcedure
+    .input(
+      z.object({
+        fileName: z.string().min(1),
+        contentType: z.string().min(1),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      await containerClient.createIfNotExists();
 
-			const extension = path.extname(input.fileName);
-			const blobName = `${ctx.session.user.id}/${randomUUID()}${extension}`;
-			const blobClient = containerClient.getBlobClient(blobName);
+      const extension = path.extname(input.fileName);
+      const blobName = `${ctx.session.user.id}/${randomUUID()}${extension}`;
+      const blobClient = containerClient.getBlobClient(blobName);
 
-			const startsOn = new Date(Date.now() - 5 * 60 * 1000);
-			const expiresOn = new Date(Date.now() + 24 * 60 * 60 * 1000);
-			const sasToken = generateBlobSASQueryParameters(
-				{
-					containerName: env.AZURE_STORAGE_CONTAINER,
-					blobName,
-					permissions: BlobSASPermissions.parse("cw"),
-					startsOn,
-					expiresOn,
-				},
-				storageCredential,
-			).toString();
+      const startsOn = new Date(Date.now() - 5 * 60 * 1000);
+      const expiresOn = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      const sasToken = generateBlobSASQueryParameters(
+        {
+          containerName: env.AZURE_STORAGE_CONTAINER,
+          blobName,
+          permissions: BlobSASPermissions.parse("cw"),
+          startsOn,
+          expiresOn,
+        },
+        storageCredential,
+      ).toString();
 
-			return {
-				uploadUrl: `${blobClient.url}?${sasToken}`,
-				blobName,
-				blobUrl: blobClient.url,
-				expiresAt: expiresOn.toISOString(),
-			};
-		}),
+      return {
+        uploadUrl: `${blobClient.url}?${sasToken}`,
+        blobName,
+        blobUrl: blobClient.url,
+        expiresAt: expiresOn.toISOString(),
+      };
+    }),
 
-	finalizeUpload: protectedProcedure
-		.input(
-			z.object({
-				blobName: z.string().min(1),
-				title: z.string().min(1),
-				sourceLanguage: z.enum(languageValues),
-				destLanguage: z.enum(languageValues),
-			}),
-		)
-		.mutation(async ({ ctx, input }) => {
-			if (input.sourceLanguage === input.destLanguage) {
-				throw new TRPCError({
-					code: "BAD_REQUEST",
-					message: "Source and destination languages must be different.",
-				});
-			}
+  finalizeUpload: protectedProcedure
+    .input(
+      z.object({
+        blobName: z.string().min(1),
+        title: z.string().min(1),
+        sourceLanguage: z.enum(languageValues),
+        destLanguage: z.enum(languageValues),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (input.sourceLanguage === input.destLanguage) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Source and destination languages must be different.",
+        });
+      }
 
-			const blobClient = containerClient.getBlobClient(input.blobName);
+      const blobClient = containerClient.getBlobClient(input.blobName);
 
-			try {
-				const properties = await blobClient.getProperties();
-				if (!properties.contentLength || properties.contentLength <= 0) {
-					throw new TRPCError({
-						code: "BAD_REQUEST",
-						message: "Uploaded blob is empty.",
-					});
-				}
-			} catch (error) {
-				if (error instanceof TRPCError) throw error;
-				throw new TRPCError({
-					code: "BAD_REQUEST",
-					message: "Upload not found. Please retry your upload.",
-				});
-			}
+      try {
+        const properties = await blobClient.getProperties();
+        if (!properties.contentLength || properties.contentLength <= 0) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Uploaded blob is empty.",
+          });
+        }
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Upload not found. Please retry your upload.",
+        });
+      }
 
-			const [video] = await ctx.db
-				.insert(videos)
-				.values({
-					id: randomUUID(),
-					title: input.title.trim(),
-					createdById: ctx.session.user.id,
-					sourceBlob: blobClient.url,
-					status: "queued",
-					sourceLanguage: input.sourceLanguage,
-					destLanguage: input.destLanguage,
-				})
-				.returning();
+      const [video] = await ctx.db
+        .insert(videos)
+        .values({
+          id: randomUUID(),
+          title: input.title.trim(),
+          createdById: ctx.session.user.id,
+          sourceBlob: blobClient.url,
+          status: "queued",
+          sourceLanguage: input.sourceLanguage,
+          destLanguage: input.destLanguage,
+        })
+        .returning();
 
-			return video;
-		}),
+      return video;
+    }),
 
-	getPlaybackUrl: protectedProcedure
-		.input(
-			z.object({
-			blobUrl: z.string().min(1),
-			}),
-		)
-		.query(async ({ input }) => {
-			const storageUrl = `https://${env.AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${env.AZURE_STORAGE_CONTAINER}/`;
+  getPlaybackUrl: protectedProcedure
+    .input(
+      z.object({
+        blobUrl: z.string().min(1),
+      }),
+    )
+    .query(async ({ input }) => {
+      const storageUrl = `https://${env.AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${env.AZURE_STORAGE_CONTAINER}/`;
 
-			if (!input.blobUrl.startsWith(storageUrl)) {
-			throw new TRPCError({
-				code: "BAD_REQUEST",
-				message: "Invalid blob URL",
-			});
-			}
+      let blobName = input.blobUrl;
 
-			const blobName = input.blobUrl.replace(storageUrl, "");
-			const blobClient = containerClient.getBlobClient(blobName);
+      if (input.blobUrl.startsWith(storageUrl)) {
+        blobName = input.blobUrl.replace(storageUrl, "");
+      } else {
+        try {
+          const parsed = new URL(input.blobUrl);
+          const expectedHost = `${env.AZURE_STORAGE_ACCOUNT}.blob.core.windows.net`;
+          const prefix = `/${env.AZURE_STORAGE_CONTAINER}/`;
+          if (
+            parsed.hostname === expectedHost &&
+            parsed.pathname.startsWith(prefix)
+          ) {
+            blobName = parsed.pathname.replace(prefix, "");
+          } else {
+            if (blobName.startsWith("/")) blobName = blobName.slice(1);
+          }
+        } catch (e) {
+          if (blobName.startsWith("/")) blobName = blobName.slice(1);
+        }
+      }
 
-			const startsOn = new Date(Date.now() - 5 * 60 * 1000);
-			const expiresOn = new Date(Date.now() + 60 * 60 * 1000);
+      const blobClient = containerClient.getBlobClient(blobName);
 
-			const sasToken = generateBlobSASQueryParameters(
-			{
-				containerName: env.AZURE_STORAGE_CONTAINER,
-				blobName,
-				permissions: BlobSASPermissions.parse("r"),
-				startsOn,
-				expiresOn,
-				// important difference from getDownloadUrl:
-				// don't force "attachment" download
-				contentDisposition: "inline",
-			},
-			storageCredential,
-			).toString();
+      const startsOn = new Date(Date.now() - 5 * 60 * 1000);
+      const expiresOn = new Date(Date.now() + 60 * 60 * 1000);
 
-			return {
-			url: `${blobClient.url}?${sasToken}`,
-			};
-		}),
+      const sasToken = generateBlobSASQueryParameters(
+        {
+          containerName: env.AZURE_STORAGE_CONTAINER,
+          blobName,
+          permissions: BlobSASPermissions.parse("r"),
+          startsOn,
+          expiresOn,
+          // important difference from getDownloadUrl:
+          // don't force "attachment" download
+          contentDisposition: "inline",
+        },
+        storageCredential,
+      ).toString();
 
+      return {
+        url: `${blobClient.url}?${sasToken}`,
+      };
+    }),
 
-	getDownloadUrl: protectedProcedure
-		.input(
-			z.object({
-				blobUrl: z.string().min(1),
-				filename: z.string().optional(),
-			}),
-		)
-		.query(async ({ input }) => {
-			const storageUrl = `https://${env.AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${env.AZURE_STORAGE_CONTAINER}/`;
+  getDownloadUrl: protectedProcedure
+    .input(
+      z.object({
+        blobUrl: z.string().min(1),
+        filename: z.string().optional(),
+      }),
+    )
+    .query(async ({ input }) => {
+      const storageUrl = `https://${env.AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${env.AZURE_STORAGE_CONTAINER}/`;
 
-			if (!input.blobUrl.startsWith(storageUrl)) {
-				throw new TRPCError({
-					code: "BAD_REQUEST",
-					message: "Invalid blob URL",
-				});
-			}
+      if (!input.blobUrl.startsWith(storageUrl)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid blob URL",
+        });
+      }
 
-			const blobName = input.blobUrl.replace(storageUrl, "");
-			const blobClient = containerClient.getBlobClient(blobName);
+      const blobName = input.blobUrl.replace(storageUrl, "");
+      const blobClient = containerClient.getBlobClient(blobName);
 
-			const startsOn = new Date(Date.now() - 5 * 60 * 1000); // 5 minutes ago
-			const expiresOn = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
+      const startsOn = new Date(Date.now() - 5 * 60 * 1000); // 5 minutes ago
+      const expiresOn = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
 
-			const sasToken = generateBlobSASQueryParameters(
-				{
-					containerName: env.AZURE_STORAGE_CONTAINER,
-					blobName,
-					permissions: BlobSASPermissions.parse("r"), // Read only
-					startsOn,
-					expiresOn,
-					contentDisposition: input.filename
-						? `attachment; filename="${input.filename}"`
-						: undefined,
-				},
-				storageCredential,
-			).toString();
+      const sasToken = generateBlobSASQueryParameters(
+        {
+          containerName: env.AZURE_STORAGE_CONTAINER,
+          blobName,
+          permissions: BlobSASPermissions.parse("r"), // Read only
+          startsOn,
+          expiresOn,
+          contentDisposition: input.filename
+            ? `attachment; filename="${input.filename}"`
+            : undefined,
+        },
+        storageCredential,
+      ).toString();
 
-			return {
-				url: `${blobClient.url}?${sasToken}`,
-			};
-		}),
+      return {
+        url: `${blobClient.url}?${sasToken}`,
+      };
+    }),
 });
