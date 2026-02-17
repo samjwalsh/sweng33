@@ -26,13 +26,27 @@ const containerClient = blobServiceClient.getContainerClient(
 	env.AZURE_STORAGE_CONTAINER,
 );
 
+const storageAccountUrl = `https://${env.AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${env.AZURE_STORAGE_CONTAINER}/`;
+
 export const videoRouter = createTRPCRouter({
 	getMyVideos: protectedProcedure.query(async ({ ctx }) => {
-		return ctx.db
+		const videosData = await ctx.db
 			.select()
 			.from(videos)
 			.where(eq(videos.createdById, ctx.session.user.id))
 			.orderBy(desc(videos.createdAt));
+
+		return videosData.map((video) => ({
+			...video,
+			sourceBlob: video.sourceBlob.startsWith("http")
+				? video.sourceBlob
+				: `${storageAccountUrl}${video.sourceBlob}`,
+			completedBlob: video.completedBlob
+				? video.completedBlob.startsWith("http")
+					? video.completedBlob
+					: `${storageAccountUrl}${video.completedBlob}`
+				: null,
+		}));
 	}),
 	createUpload: protectedProcedure
 		.input(
@@ -43,6 +57,24 @@ export const videoRouter = createTRPCRouter({
 		)
 		.mutation(async ({ ctx, input }) => {
 			await containerClient.createIfNotExists();
+
+			const corsRules = [
+				{
+					allowedOrigins: "*",
+					allowedMethods: "PUT,GET,POST,OPTIONS",
+					allowedHeaders: "*",
+					exposedHeaders: "*",
+					maxAgeInSeconds: 3600,
+				},
+			];
+
+			try {
+				await blobServiceClient.setProperties({
+					cors: corsRules,
+				});
+			} catch (error) {
+				console.error("Error setting CORS properties:", error);
+			}
 
 			const extension = path.extname(input.fileName);
 			const blobName = `${ctx.session.user.id}/${randomUUID()}${extension}`;
@@ -110,14 +142,65 @@ export const videoRouter = createTRPCRouter({
 					id: randomUUID(),
 					title: input.title.trim(),
 					createdById: ctx.session.user.id,
-					sourceBlob: blobClient.url,
+					sourceBlob: input.blobName,
 					status: "queued",
 					sourceLanguage: input.sourceLanguage,
 					destLanguage: input.destLanguage,
 				})
 				.returning();
 
-			return video;
+			if (!video) {
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Failed to create video record",
+				});
+			}
+
+			return {
+				...video,
+				sourceBlob: `${storageAccountUrl}${video.sourceBlob}`,
+			};
+		}),
+
+	deleteVideo: protectedProcedure
+		.input(z.object({ id: z.string().min(1) }))
+		.mutation(async ({ ctx, input }) => {
+			const video = await ctx.db.query.videos.findFirst({
+				where: (videos, { eq, and }) =>
+					and(
+						eq(videos.id, input.id),
+						eq(videos.createdById, ctx.session.user.id),
+					),
+			});
+
+			if (!video) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Video not found",
+				});
+			}
+
+			const deleteBlobIfExists = async (blobUrl: string) => {
+				const blobName = blobUrl.startsWith("http")
+					? blobUrl.replace(storageAccountUrl, "")
+					: blobUrl;
+				const blobClient = containerClient.getBlobClient(blobName);
+				try {
+					await blobClient.deleteIfExists();
+				} catch (error) {
+					console.error(`Error deleting blob ${blobName}:`, error);
+				}
+			};
+
+			await deleteBlobIfExists(video.sourceBlob);
+
+			if (video.completedBlob) {
+				await deleteBlobIfExists(video.completedBlob);
+			}
+
+			await ctx.db.delete(videos).where(eq(videos.id, input.id));
+
+			return { success: true };
 		}),
 
 	getDownloadUrl: protectedProcedure
