@@ -22,7 +22,7 @@ export const videoStatusEnum = pgEnum("video_status", [
 
 export const videos = createTable(
   "videos",
-  (d) => ({
+  (_d) => ({
     id: text("id").primaryKey(),
     title: text("title").notNull(),
     createdById: text("created_by_id").notNull().references(() => user.id),

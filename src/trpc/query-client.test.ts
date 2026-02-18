@@ -20,9 +20,7 @@ describe("createQueryClient", () => {
       createdAt: new Date("2024-01-01T00:00:00.000Z"),
       title: "demo",
     };
-    const restored = deserialize!(serialize!(payload));
-
-    expect(restored).toEqual(payload);
+    expect(deserialize!(serialize!(payload)) as typeof payload).toEqual(payload);
   });
 
   it("returns a fresh QueryClient instance for each call", () => {
