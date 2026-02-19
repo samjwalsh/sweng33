@@ -19,6 +19,7 @@ export default function ProtectedPageClient({ session }: { session: Session }) {
     refetch: refetchMyVideos,
     isLoading: isVideosLoading,
   } = api.video.getMyVideos.useQuery();
+  const deleteVideo = api.video.deleteVideo.useMutation();
 
   useEffect(() => {
     if (!myVideos) return;
@@ -61,6 +62,20 @@ export default function ProtectedPageClient({ session }: { session: Session }) {
     setActiveVideoId(id);
   };
 
+  const handleDeleteVideo = async (videoId: string) => {
+    await deleteVideo.mutateAsync({ id: videoId });
+    setPendingVideoId((prev) => (prev === videoId ? null : prev));
+    setVideos((prev) => {
+      const nextVideos = prev.filter((video) => video.id !== videoId);
+      setActiveVideoId((activeId) => {
+        if (activeId !== videoId) return activeId;
+        return nextVideos[0]?.id ?? null;
+      });
+      return nextVideos;
+    });
+    await refetchMyVideos();
+  };
+
   return (
     <SidebarProvider>
       <AppSidebar
@@ -71,7 +86,13 @@ export default function ProtectedPageClient({ session }: { session: Session }) {
         isLoading={isVideosLoading}
       />
       <SidebarInset>
-        {activeVideo && <VideoViewer video={activeVideo} />}
+        {activeVideo && (
+          <VideoViewer
+            video={activeVideo}
+            onDeleteVideo={handleDeleteVideo}
+            isDeleting={deleteVideo.isPending}
+          />
+        )}
         {!activeVideo && (
           <VideoUpload onUploadComplete={handleUploadComplete} />
         )}
