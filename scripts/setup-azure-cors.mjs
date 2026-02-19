@@ -53,7 +53,7 @@ async function main() {
   const credential = new StorageSharedKeyCredential(account, key);
   const blobServiceClient = new BlobServiceClient(
     `https://${account}.blob.core.windows.net`,
-    credential
+    credential,
   );
 
   console.log("Setting service properties (CORS)...");
@@ -66,25 +66,32 @@ async function main() {
       allowedOrigins: "*",
       allowedMethods: "GET,HEAD,OPTIONS",
       allowedHeaders: "*",
-      exposedHeaders: "Content-Length,Content-Range,Accept-Ranges,Content-Encoding,Content-Type,ETag",
+      exposedHeaders:
+        "Content-Length,Content-Range,Accept-Ranges,Content-Encoding,Content-Type,ETag",
       maxAgeInSeconds: 86400,
     };
 
     // Check if a similar rule exists and update it, or add new
     let found = false;
-    const updatedCors = existingCors.map(rule => {
+    const updatedCors = existingCors.map((rule) => {
       if (rule.allowedOrigins === "*") {
         found = true;
         // Merge methods
-        const methods = new Set([...rule.allowedMethods.split(","), ...newCorsRule.allowedMethods.split(",")]);
-        const exposed = new Set([...rule.exposedHeaders.split(","), ...newCorsRule.exposedHeaders.split(",")]);
-        
+        const methods = new Set([
+          ...rule.allowedMethods.split(","),
+          ...newCorsRule.allowedMethods.split(","),
+        ]);
+        const exposed = new Set([
+          ...rule.exposedHeaders.split(","),
+          ...newCorsRule.exposedHeaders.split(","),
+        ]);
+
         return {
           ...rule,
           allowedMethods: Array.from(methods).join(","),
           exposedHeaders: Array.from(exposed).join(","),
           allowedHeaders: "*", // Enforce *
-          maxAgeInSeconds: 86400
+          maxAgeInSeconds: 86400,
         };
       }
       return rule;
@@ -93,15 +100,17 @@ async function main() {
     if (!found) {
       updatedCors.push(newCorsRule);
     }
-    
+
     const serviceProperties = {
       cors: updatedCors,
     };
-    
-    console.log("Updating service properties with:", JSON.stringify(serviceProperties, null, 2));
+
+    console.log(
+      "Updating service properties with:",
+      JSON.stringify(serviceProperties, null, 2),
+    );
     await blobServiceClient.setProperties(serviceProperties);
     console.log("CORS rules updated successfully.");
-
   } catch (err) {
     console.error("Error setting CORS properties:", err.message);
     process.exit(1);
