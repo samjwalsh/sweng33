@@ -30,13 +30,6 @@ export default function ProtectedPageClient({ session }: { session: Session }) {
       ? myVideos.some((video) => video.id === pendingVideoId)
       : false;
 
-    setActiveVideoId((prev) => {
-      if (pendingVideoId) return pendingVideoId;
-      if (!prev) return myVideos[0]?.id ?? null;
-      const prevExists = myVideos.some((video) => video.id === prev);
-      return prevExists ? prev : (myVideos[0]?.id ?? null);
-    });
-
     if (pendingExists) {
       setPendingVideoId(null);
     }

@@ -14,7 +14,8 @@ export default function VideoPlayer({ video }: { video: Video }) {
   );
   const [src, setSrc] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(true);
-  const [completedAvailable, setCompletedAvailable] = React.useState(!!completedBlobUrl);
+  const [completedAvailable, setCompletedAvailable] =
+    React.useState(!!completedBlobUrl);
   const [error, setError] = React.useState<string | null>(null);
 
   // NOTE: do not change blob values/shape — keep exactly as-is
@@ -39,6 +40,12 @@ export default function VideoPlayer({ video }: { video: Video }) {
   }, [originalBlobUrl]);
 
   React.useEffect(() => {
+    setSrc(null);
+    setLoading(true);
+    setSelected(completedBlobUrl ? "completed" : "original");
+  }, [video.id, completedBlobUrl]);
+
+  React.useEffect(() => {
     let cancelled = false;
 
     async function resolveUrl() {
@@ -46,7 +53,9 @@ export default function VideoPlayer({ video }: { video: Video }) {
       setError(null);
 
       const order: Array<"completed" | "original"> =
-        selected === "completed" ? ["completed", "original"] : ["original", "completed"];
+        selected === "completed"
+          ? ["completed", "original"]
+          : ["original", "completed"];
 
       for (const kind of order) {
         try {
@@ -95,7 +104,13 @@ export default function VideoPlayer({ video }: { video: Video }) {
     return () => {
       cancelled = true;
     };
-  }, [selected, completedBlobUrl, originalBlobUrl, refetchCompleted, refetchOriginal]);
+  }, [
+    selected,
+    completedBlobUrl,
+    originalBlobUrl,
+    refetchCompleted,
+    refetchOriginal,
+  ]);
 
   return (
     <div>
@@ -146,7 +161,7 @@ export default function VideoPlayer({ video }: { video: Video }) {
               textAlign: "center",
             }}
           >
-            {loading ? "Loading video…" : error ?? "No video source."}
+            {loading ? "Loading video…" : (error ?? "No video source.")}
           </div>
         )}
       </div>
