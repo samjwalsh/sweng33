@@ -15,6 +15,9 @@ export const env = createEnv({
     GOOGLE_CLIENT_ID: z.string(),
     GOOGLE_CLIENT_SECRET: z.string(),
     DATABASE_URL: z.string().url(),
+    AZURE_STORAGE_ACCOUNT: z.string(),
+    AZURE_STORAGE_KEY: z.string(),
+    AZURE_STORAGE_CONTAINER: z.string(),
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
@@ -39,6 +42,9 @@ export const env = createEnv({
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
     DATABASE_URL: process.env.DATABASE_URL,
+    AZURE_STORAGE_ACCOUNT: process.env.AZURE_STORAGE_ACCOUNT,
+    AZURE_STORAGE_KEY: process.env.AZURE_STORAGE_KEY,
+    AZURE_STORAGE_CONTAINER: process.env.AZURE_STORAGE_CONTAINER,
     NODE_ENV: process.env.NODE_ENV,
   },
   /**
