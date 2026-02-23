@@ -12,7 +12,7 @@ function setViewport(width: number) {
 }
 
 describe("useIsMobile", () => {
-  const listeners = new Set<() => void>();
+  const listeners = new Set<EventListener>();
   const addEventListener = vi.fn(
     (event: string, listener: EventListenerOrEventListenerObject) => {
       if (event !== "change") return;
@@ -66,7 +66,7 @@ describe("useIsMobile", () => {
     act(() => {
       setViewport(500);
       for (const listener of listeners) {
-        listener();
+        listener(new Event("change"));
       }
     });
 
