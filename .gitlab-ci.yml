@@ -73,11 +73,12 @@ release:
   rules:
     - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
   script:
-    - VERSION="$(sed -n 's/.*\"version\": \"\([^\"]*\)\".*/\1/p' package.json | head -n 1)"
-    - TAG_NAME="v${VERSION}-${CI_PIPELINE_IID}"
-    - RELEASE_NAME="Release ${TAG_NAME}"
-    - RELEASE_DESCRIPTION="Automated release for ${CI_COMMIT_SHA} from ${CI_COMMIT_REF_NAME}."
     - |
+      VERSION="$(sed -n 's/.*"version": "\([^"]*\)".*/\1/p' package.json | head -n 1)"
+      TAG_NAME="v${VERSION}-${CI_PIPELINE_IID}"
+      RELEASE_NAME="Release ${TAG_NAME}"
+      RELEASE_DESCRIPTION="Automated release for ${CI_COMMIT_SHA} from ${CI_COMMIT_REF_NAME}."
+
       curl --fail --silent --show-error \
         --request POST \
         --header "JOB-TOKEN: $CI_JOB_TOKEN" \
