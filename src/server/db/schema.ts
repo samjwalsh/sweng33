@@ -6,6 +6,8 @@ import {
   pgTableCreator,
   text,
   timestamp,
+  integer,
+  doublePrecision,
 } from "drizzle-orm/pg-core";
 import { languageValues } from "@/lib/languages";
 
@@ -20,20 +22,30 @@ export const videoStatusEnum = pgEnum("video_status", [
   "failed",
 ]);
 
-export const videos = createTable(
-  "videos",
-  (_d) => ({
-    id: text("id").primaryKey(),
-    title: text("title").notNull(),
-    createdById: text("created_by_id").notNull().references(() => user.id),
-    createdAt: timestamp("created_at").$default(() => new Date()).notNull(),
-    sourceBlob: text("blob").notNull(),
-    completedBlob: text("completed_blob"),
-    status: videoStatusEnum("status").default("queued").notNull(),
-    sourceLanguage: languageEnum("source_language").notNull(),
-    destLanguage: languageEnum("dest_language").notNull(),
-  })
-)
+export const videos = createTable("videos", (d) => ({
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  createdById: text("created_by_id")
+    .notNull()
+    .references(() => user.id),
+  createdAt: timestamp("created_at")
+    .$default(() => new Date())
+    .notNull(),
+  sourceBlob: text("blob").notNull(),
+  completedBlob: text("completed_blob"),
+  status: videoStatusEnum("status").default("queued").notNull(),
+  sourceLanguage: languageEnum("source_language").notNull(),
+  destLanguage: languageEnum("dest_language").notNull(),
+}));
+
+export const tts = createTable("tts", (d) => ({
+  src_blob: text("src_blob"),
+  gen_blob: text("gen_blob"),
+  segment_id: integer("segment_id"),
+  speaker_id: text("speaker_id"),
+  start: doublePrecision("start"),
+  end: doublePrecision("end"),
+}));
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),

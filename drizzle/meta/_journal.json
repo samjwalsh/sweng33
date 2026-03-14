@@ -8,6 +8,13 @@
       "when": 1770808179239,
       "tag": "0000_striped_iron_patriot",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1772461679020,
+      "tag": "0001_sparkling_franklin_richards",
+      "breakpoints": true
     }
   ]
 }
