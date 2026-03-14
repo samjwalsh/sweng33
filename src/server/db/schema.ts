@@ -36,6 +36,15 @@ export const videos = createTable("videos", (d) => ({
   status: videoStatusEnum("status").default("queued").notNull(),
   sourceLanguage: languageEnum("source_language").notNull(),
   destLanguage: languageEnum("dest_language").notNull(),
+
+  diarizationCompletedTasks: integer("diarization_completed_tasks"),
+  diarizationTotalTasks: integer("diarization_total_tasks"),
+  translationCompletedTasks: integer("translation_completed_tasks"),
+  translationTotalTasks: integer("translation_total_tasks"),
+  ttsCompletedTasks: integer("tts_completed_tasks"),
+  ttsTotalTasks: integer("tts_total_tasks"),
+  reconstructionCompletedTasks: integer("reconstruction_completed_tasks"),
+  reconstructionTotalTasks: integer("reconstruction_total_tasks"),
 }));
 
 export const tts = createTable("tts", (d) => ({
