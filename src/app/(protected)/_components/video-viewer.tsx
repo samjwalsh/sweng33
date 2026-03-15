@@ -13,6 +13,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import VideoPlayer from "./video-player";
 import { DownloadVideo } from "@/app/_components/download-video";
+import { Progress } from "@/components/ui/progress";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+
+
 /*
 
 Main thing is that there is a prominent download button for the video, but you would probably expect to be able to see all of the info about it like when you uploaded it and maybe a player for the video
@@ -20,6 +24,10 @@ The source language and the destination language.
 We should probably also have a button to delete the video if the user is done with it.
 
 */
+
+
+
+
 export default function VideoViewer({
   video,
   onDeleteVideo,
@@ -34,6 +42,61 @@ export default function VideoViewer({
     if (!confirmed) return;
     await onDeleteVideo(video.id);
   };
+
+  //returns the current task that the video is on
+  const currentTask = () => {
+    if (
+      video.diarizationTotalTasks != null &&
+      video.diarizationCompletedTasks != null &&
+      video.diarizationCompletedTasks < video.diarizationTotalTasks
+    ) {
+      return "Diarisation"
+    } else if (
+      video.translationTotalTasks != null &&
+      video.translationCompletedTasks != null &&
+      video.translationCompletedTasks < video.translationTotalTasks
+    ) {
+      return "Translation"
+    } else if (
+      video.ttsTotalTasks != null &&
+      video.ttsCompletedTasks != null &&
+      video.ttsCompletedTasks < video.ttsTotalTasks
+    ) {
+      return "Text-To-Speech"
+    } else if (
+      video.reconstructionTotalTasks != null &&
+      video.reconstructionCompletedTasks != null &&
+      video.reconstructionCompletedTasks < video.reconstructionTotalTasks
+    ) {
+      return "Reconstruction"
+    } else {
+      if(taskCompletionPercent() === 0){
+        return "Not Started"
+      }
+      return "Completed"
+    }
+
+  };
+
+  //returns the percentage of tasks completed
+  const taskCompletionPercent = (): number => {
+    const totalTasks =
+      (video.diarizationTotalTasks ?? 0) +
+      (video.translationTotalTasks ?? 0) +
+      (video.ttsTotalTasks ?? 0) +
+      (video.reconstructionTotalTasks ?? 0);
+
+    const completedTasks =
+      (video.diarizationCompletedTasks ?? 0) +
+      (video.translationCompletedTasks ?? 0) +
+      (video.ttsCompletedTasks ?? 0) +
+      (video.reconstructionCompletedTasks ?? 0);
+
+    if (totalTasks === 0) return 0;
+    return Math.round((completedTasks / totalTasks) * 100);
+  };
+
+
   return (
     <div style={{ padding: "40px" }}>
       <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
@@ -43,7 +106,7 @@ export default function VideoViewer({
         <div
           style={{
             marginTop: "28px",
-            paddingTop: "45px",
+            paddingTop: "0px",
             display: "flex",
             flexDirection: "row",
             justifyContent: "space-between",
@@ -107,6 +170,8 @@ export default function VideoViewer({
               flexDirection: "column",
               alignItems: "stretch",
               color: "#333",
+              position: "relative",
+              top: "-55px",
             }}
           >
             <h3
@@ -164,12 +229,98 @@ export default function VideoViewer({
               </Badge>
             </div>
 
-            <div style={{ marginTop: "30px" }}>
+            {/* Progress on translation for the user */}
+            <div style={{ marginTop: "30px"}}>
+              <Field className="w-full max-w-sm">
+                <Progress value={taskCompletionPercent()} id="progress-upload" />
+                <FieldLabel htmlFor="progress-upload">
+                  <span>{currentTask()}</span>
+                  <span className="ml-auto">{taskCompletionPercent()}%</span>
+                </FieldLabel>
+              </Field>
+            </div>
+
+            <div style={{ 
+              marginTop: "30px" }}>
               <DownloadVideo
                 completedBlobId={video.completedBlob}
                 originalBlobId={video.sourceBlob}
               />
             </div>
+            
+
+            {/*
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "12px 20px",
+                marginTop: "16px",
+                position: "relative",
+                top: "-10px",
+              }}
+              >
+              
+              <Field orientation="horizontal">
+                <Checkbox 
+                  id="diarisation-checkbox" 
+                  name="diarisation-checkbox" 
+                  checked={
+                    video.diarizationTotalTasks != null &&
+                    video.diarizationCompletedTasks==video.diarizationTotalTasks
+                    }
+                  />
+                <FieldLabel htmlFor="diarisation-checkbox">
+                  Diarisation: {video.diarizationCompletedTasks} / {video.diarizationTotalTasks}
+                </FieldLabel>
+              </Field>
+
+              
+              <Field orientation="horizontal">
+                <Checkbox 
+                  id="translation-checkbox"
+                  name="translation-checkbox" 
+                  checked={
+                    video.translationTotalTasks != null &&
+                    video.translationCompletedTasks === video.translationTotalTasks
+                  }
+                />
+                <FieldLabel htmlFor="translation-checkbox">
+                  Translation: {video.translationCompletedTasks} / {video.translationTotalTasks}
+                </FieldLabel>
+              </Field>
+
+              
+              <Field orientation="horizontal">
+                <Checkbox 
+                  id="tts-checkbox" 
+                  name="tts-checkbox" 
+                  checked={
+                    video.ttsTotalTasks != null &&
+                    video.ttsCompletedTasks==video.ttsTotalTasks
+                    }
+                  />
+                <FieldLabel htmlFor="tts-checkbox">
+                  Text-To-Speech: {video.ttsCompletedTasks} / {video.ttsTotalTasks}
+                </FieldLabel>
+              </Field>
+
+              
+              <Field orientation="horizontal">
+                <Checkbox 
+                  id="reconstruction-checkbox" 
+                  name="reconstruction-checkbox" 
+                  checked={
+                    video.reconstructionTotalTasks != null &&
+                    video.reconstructionCompletedTasks==video.reconstructionTotalTasks
+                    }
+                  />
+                <FieldLabel htmlFor="reconstruction-checkbox">
+                  Reconstruction: {video.reconstructionCompletedTasks} / {video.reconstructionTotalTasks}
+                </FieldLabel>
+              </Field>
+            </div> 
+            */}
           </div>
         </div>
       </div>
