@@ -13,6 +13,7 @@ import path from "path";
 import { languageValues } from "@/lib/languages";
 import { videos } from "@/server/db/schema";
 import { desc, eq } from "drizzle-orm";
+import { sendIngestMessage } from "@/server/kafka/producer";
 
 const storageCredential = new StorageSharedKeyCredential(
   env.AZURE_STORAGE_ACCOUNT,
@@ -136,6 +137,16 @@ export const videoRouter = createTRPCRouter({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to create video record",
         });
+      }
+
+      try {
+        await sendIngestMessage({
+          src_blob: blobClient.url,
+          src_lang: video.sourceLanguage ?? null,
+          dest_lang: video.destLanguage,
+        });
+      } catch (error) {
+        console.error("Failed to send ingest message:", error);
       }
 
       return {
