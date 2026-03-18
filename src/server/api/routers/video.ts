@@ -10,9 +10,10 @@ import {
 } from "@azure/storage-blob";
 import { randomUUID } from "crypto";
 import path from "path";
-import { languageValues } from "@/lib/languages";
+import { languageCodes } from "@/lib/languages";
 import { videos } from "@/server/db/schema";
 import { desc, eq } from "drizzle-orm";
+import { sendIngestMessage } from "@/server/kafka/producer";
 
 const storageCredential = new StorageSharedKeyCredential(
   env.AZURE_STORAGE_ACCOUNT,
@@ -26,7 +27,54 @@ const containerClient = blobServiceClient.getContainerClient(
   env.AZURE_STORAGE_CONTAINER,
 );
 
-const storageAccountUrl = `https://${env.AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${env.AZURE_STORAGE_CONTAINER}/`;
+const storageHost = `${env.AZURE_STORAGE_ACCOUNT}.blob.core.windows.net`;
+const storageContainerPrefix = `/${env.AZURE_STORAGE_CONTAINER}/`;
+const storageAccountUrl = `https://${storageHost}${storageContainerPrefix}`;
+
+const normalizeBlobName = (blobLocation: string) => {
+  if (blobLocation.startsWith(storageAccountUrl)) {
+    return blobLocation.replace(storageAccountUrl, "");
+  }
+
+  try {
+    const parsed = new URL(blobLocation);
+    if (
+      parsed.hostname === storageHost &&
+      parsed.pathname.startsWith(storageContainerPrefix)
+    ) {
+      return parsed.pathname.replace(storageContainerPrefix, "");
+    }
+  } catch {
+    // Not a URL, treat as relative path
+  }
+
+  return blobLocation.startsWith("/") ? blobLocation.slice(1) : blobLocation;
+};
+
+const normalizeBlobNameOrThrow = (blobLocation: string) => {
+  if (blobLocation.startsWith(storageAccountUrl)) {
+    return blobLocation.replace(storageAccountUrl, "");
+  }
+
+  try {
+    const parsed = new URL(blobLocation);
+    if (
+      parsed.hostname === storageHost &&
+      parsed.pathname.startsWith(storageContainerPrefix)
+    ) {
+      return parsed.pathname.replace(storageContainerPrefix, "");
+    }
+
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Invalid blob location",
+    });
+  } catch (error) {
+    if (error instanceof TRPCError) throw error;
+  }
+
+  return blobLocation.startsWith("/") ? blobLocation.slice(1) : blobLocation;
+};
 
 export const videoRouter = createTRPCRouter({
   getMyVideos: protectedProcedure.query(async ({ ctx }) => {
@@ -38,13 +86,9 @@ export const videoRouter = createTRPCRouter({
 
     return videosData.map((video) => ({
       ...video,
-      sourceBlob: video.sourceBlob.startsWith("http")
-        ? video.sourceBlob
-        : `${storageAccountUrl}${video.sourceBlob}`,
+      sourceBlob: normalizeBlobName(video.sourceBlob),
       completedBlob: video.completedBlob
-        ? video.completedBlob.startsWith("http")
-          ? video.completedBlob
-          : `${storageAccountUrl}${video.completedBlob}`
+        ? normalizeBlobName(video.completedBlob)
         : null,
     }));
   }),
@@ -88,8 +132,8 @@ export const videoRouter = createTRPCRouter({
       z.object({
         blobName: z.string().min(1),
         title: z.string().min(1),
-        sourceLanguage: z.enum(languageValues),
-        destLanguage: z.enum(languageValues),
+        sourceLanguage: z.enum(languageCodes),
+        destLanguage: z.enum(languageCodes),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -138,10 +182,53 @@ export const videoRouter = createTRPCRouter({
         });
       }
 
+      try {
+        await sendIngestMessage({
+          src_blob: normalizeBlobName(blobClient.url),
+          src_lang: video.sourceLanguage ?? null,
+          dest_lang: video.destLanguage,
+        });
+      } catch (error) {
+        console.error("Failed to send ingest message:", error);
+      }
+
       return {
         ...video,
-        sourceBlob: `${storageAccountUrl}${video.sourceBlob}`,
+        sourceBlob: normalizeBlobName(video.sourceBlob),
       };
+    }),
+
+  resendIngest: protectedProcedure
+    .input(z.object({ id: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const video = await ctx.db.query.videos.findFirst({
+        where: (videos, { eq, and }) =>
+          and(
+            eq(videos.id, input.id),
+            eq(videos.createdById, ctx.session.user.id),
+          ),
+      });
+
+      if (!video) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Video not found",
+        });
+      }
+
+      try {
+        const blobName = normalizeBlobName(video.sourceBlob);
+        await sendIngestMessage({
+          src_blob: blobName,
+          src_lang: video.sourceLanguage ?? null,
+          dest_lang: video.destLanguage,
+        });
+
+        return { sent: true };
+      } catch (error) {
+        console.error("Failed to resend ingest message:", error);
+        return { sent: false };
+      }
     }),
 
   deleteVideo: protectedProcedure
@@ -163,9 +250,7 @@ export const videoRouter = createTRPCRouter({
       }
 
       const deleteBlobIfExists = async (blobUrl: string) => {
-        const blobName = blobUrl.startsWith("http")
-          ? blobUrl.replace(storageAccountUrl, "")
-          : blobUrl;
+        const blobName = normalizeBlobName(blobUrl);
         const blobClient = containerClient.getBlobClient(blobName);
         try {
           await blobClient.deleteIfExists();
@@ -192,29 +277,7 @@ export const videoRouter = createTRPCRouter({
       }),
     )
     .query(async ({ input }) => {
-      const storageUrl = `https://${env.AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${env.AZURE_STORAGE_CONTAINER}/`;
-
-      let blobName = input.blobUrl;
-
-      if (input.blobUrl.startsWith(storageUrl)) {
-        blobName = input.blobUrl.replace(storageUrl, "");
-      } else {
-        try {
-          const parsed = new URL(input.blobUrl);
-          const expectedHost = `${env.AZURE_STORAGE_ACCOUNT}.blob.core.windows.net`;
-          const prefix = `/${env.AZURE_STORAGE_CONTAINER}/`;
-          if (
-            parsed.hostname === expectedHost &&
-            parsed.pathname.startsWith(prefix)
-          ) {
-            blobName = parsed.pathname.replace(prefix, "");
-          } else {
-            if (blobName.startsWith("/")) blobName = blobName.slice(1);
-          }
-        } catch (e) {
-          if (blobName.startsWith("/")) blobName = blobName.slice(1);
-        }
-      }
+      const blobName = normalizeBlobNameOrThrow(input.blobUrl);
 
       const blobClient = containerClient.getBlobClient(blobName);
 
@@ -248,16 +311,7 @@ export const videoRouter = createTRPCRouter({
       }),
     )
     .query(async ({ input }) => {
-      const storageUrl = `https://${env.AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${env.AZURE_STORAGE_CONTAINER}/`;
-
-      if (!input.blobUrl.startsWith(storageUrl)) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Invalid blob URL",
-        });
-      }
-
-      const blobName = input.blobUrl.replace(storageUrl, "");
+      const blobName = normalizeBlobNameOrThrow(input.blobUrl);
       const blobClient = containerClient.getBlobClient(blobName);
 
       const startsOn = new Date(Date.now() - 5 * 60 * 1000); // 5 minutes ago

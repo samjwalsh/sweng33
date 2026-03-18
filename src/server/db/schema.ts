@@ -9,11 +9,27 @@ import {
   integer,
   doublePrecision,
 } from "drizzle-orm/pg-core";
-import { languageValues } from "@/lib/languages";
+import { languageCodes } from "@/lib/languages";
 
 export const createTable = pgTableCreator((name) => `pg-drizzle_${name}`);
 
-export const languageEnum = pgEnum("language_code", languageValues);
+const legacyLanguageNames = [
+  "Chinese",
+  "English",
+  "Japanese",
+  "Korean",
+  "German",
+  "French",
+  "Russian",
+  "Portuguese",
+  "Spanish",
+  "Italian",
+] as const;
+
+export const languageEnum = pgEnum("language_code", [
+  ...legacyLanguageNames,
+  ...languageCodes,
+]);
 
 export const videoStatusEnum = pgEnum("video_status", [
   "queued",
