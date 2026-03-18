@@ -14,7 +14,8 @@ import {
 import VideoPlayer from "./video-player";
 import { DownloadVideo } from "@/app/_components/download-video";
 import { Progress } from "@/components/ui/progress";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { api } from "@/trpc/react"
 
 
 /*
@@ -24,8 +25,6 @@ The source language and the destination language.
 We should probably also have a button to delete the video if the user is done with it.
 
 */
-
-
 
 
 export default function VideoViewer({
@@ -43,30 +42,62 @@ export default function VideoViewer({
     await onDeleteVideo(video.id);
   };
 
+  //FIGURE OUT TESTING!!!
+  const exampleVideo = {
+    id: "video_123",
+    title: "My First Video",
+    createdById: "user_abc",
+    createdAt: new Date(), // or an ISO string
+    sourceBlob: "s3://bucket/source.mp4",
+    completedBlob: null, // or "s3://bucket/completed.mp4"
+    status: "processing", // one of: "queued", "processing", "done", "failed"
+    sourceLanguage: "en", // match your languageValues (e.g. "en", "es")
+    destLanguage: "es",
+    
+    diarizationCompletedTasks: 0,
+    diarizationTotalTasks: 3,
+    translationCompletedTasks: 0,
+    translationTotalTasks: 5,
+    ttsCompletedTasks: 0,
+    ttsTotalTasks: 5,
+    reconstructionCompletedTasks: 0,
+    reconstructionTotalTasks: 1,
+    
+  };
+
+
+  const {data: progress} = api.video.getVideoProgress.useQuery({videoId: exampleVideo.id}, //calling backend endpoint   CHANGE BACK TO VIDEO
+    {
+      refetchInterval: 2000   //refetches the data every 2 seconds
+    }
+  )
+
+  const liveVideo = progress ?? video; 
+
   //returns the current task that the video is on
   const currentTask = () => {
     if (
-      video.diarizationTotalTasks != null &&
-      video.diarizationCompletedTasks != null &&
-      video.diarizationCompletedTasks < video.diarizationTotalTasks
+      liveVideo.diarizationTotalTasks != null &&
+      liveVideo.diarizationCompletedTasks != null &&
+      liveVideo.diarizationCompletedTasks < liveVideo.diarizationTotalTasks
     ) {
       return "Diarisation"
     } else if (
-      video.translationTotalTasks != null &&
-      video.translationCompletedTasks != null &&
-      video.translationCompletedTasks < video.translationTotalTasks
+      liveVideo.translationTotalTasks != null &&
+      liveVideo.translationCompletedTasks != null &&
+      liveVideo.translationCompletedTasks < liveVideo.translationTotalTasks
     ) {
       return "Translation"
     } else if (
-      video.ttsTotalTasks != null &&
-      video.ttsCompletedTasks != null &&
-      video.ttsCompletedTasks < video.ttsTotalTasks
+      liveVideo.ttsTotalTasks != null &&
+      liveVideo.ttsCompletedTasks != null &&
+      liveVideo.ttsCompletedTasks < liveVideo.ttsTotalTasks
     ) {
       return "Text-To-Speech"
     } else if (
-      video.reconstructionTotalTasks != null &&
-      video.reconstructionCompletedTasks != null &&
-      video.reconstructionCompletedTasks < video.reconstructionTotalTasks
+      liveVideo.reconstructionTotalTasks != null &&
+      liveVideo.reconstructionCompletedTasks != null &&
+      liveVideo.reconstructionCompletedTasks < liveVideo.reconstructionTotalTasks
     ) {
       return "Reconstruction"
     } else {
@@ -81,16 +112,16 @@ export default function VideoViewer({
   //returns the percentage of tasks completed
   const taskCompletionPercent = (): number => {
     const totalTasks =
-      (video.diarizationTotalTasks ?? 0) +
-      (video.translationTotalTasks ?? 0) +
-      (video.ttsTotalTasks ?? 0) +
-      (video.reconstructionTotalTasks ?? 0);
+      (liveVideo.diarizationTotalTasks ?? 0) +
+      (liveVideo.translationTotalTasks ?? 0) +
+      (liveVideo.ttsTotalTasks ?? 0) +
+      (liveVideo.reconstructionTotalTasks ?? 0);
 
     const completedTasks =
-      (video.diarizationCompletedTasks ?? 0) +
-      (video.translationCompletedTasks ?? 0) +
-      (video.ttsCompletedTasks ?? 0) +
-      (video.reconstructionCompletedTasks ?? 0);
+      (liveVideo.diarizationCompletedTasks ?? 0) +
+      (liveVideo.translationCompletedTasks ?? 0) +
+      (liveVideo.ttsCompletedTasks ?? 0) +
+      (liveVideo.reconstructionCompletedTasks ?? 0);
 
     if (totalTasks === 0) return 0;
     return Math.round((completedTasks / totalTasks) * 100);
@@ -98,14 +129,13 @@ export default function VideoViewer({
 
 
   return (
-    <div style={{ padding: "40px" }}>
+    <div style ={{ padding: "40px" }}>
       <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
         {/* Gray Box Placeholder for Video */}
         <VideoPlayer video={video} />
         {/* Bottom section under the video*/}
         <div
           style={{
-            marginTop: "28px",
             paddingTop: "0px",
             display: "flex",
             flexDirection: "row",
@@ -117,8 +147,8 @@ export default function VideoViewer({
           {/* Left: title + other details */}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <h1 style={{ fontSize: "40px", fontWeight: "bold" }}>
-                {video.title}
+              <h1 style={{ fontSize: "45px", fontWeight: "bold", marginTop: "10px"}}>
+                {exampleVideo.title /*CHANGE BACK TO VIDEO */} 
               </h1>
 
               {/* Small square action button to edit title and other actions */}
@@ -171,7 +201,8 @@ export default function VideoViewer({
               alignItems: "stretch",
               color: "#333",
               position: "relative",
-              top: "-55px",
+              top: "-30px",
+              
             }}
           >
             <h3
@@ -185,20 +216,20 @@ export default function VideoViewer({
             </h3>
 
             <div className="flex flex-wrap justify-between">
-              <Badge variant={video.status == "queued" ? "outline" : "ghost"}>
+              <Badge variant={liveVideo.status == "queued" ? "outline" : "ghost"}>
                 Queued
               </Badge>
 
               <Badge
-                variant={video.status == "processing" ? "outline" : "ghost"}
+                variant={liveVideo.status == "processing" ? "outline" : "ghost"}
                 className={
-                  video.status === "processing"
+                  liveVideo.status === "processing"
                     ? "bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300"
                     : ""
                 }
               >
                 Processing
-                {video.status === "processing" && (
+                {liveVideo.status === "processing" && (
                   <Spinner
                     className="ml-2 inline-block align-middle"
                     data-icon="inline-end"
@@ -207,9 +238,9 @@ export default function VideoViewer({
               </Badge>
 
               <Badge
-                variant={video.status == "done" ? "outline" : "ghost"}
+                variant={liveVideo.status == "done" ? "outline" : "ghost"}
                 className={
-                  video.status == "done"
+                  liveVideo.status == "done"
                     ? "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300"
                     : ""
                 }
@@ -218,9 +249,9 @@ export default function VideoViewer({
               </Badge>
 
               <Badge
-                variant={video.status == "failed" ? "outline" : "ghost"}
+                variant={liveVideo.status == "failed" ? "outline" : "ghost"}
                 className={
-                  video.status === "failed"
+                  liveVideo.status === "failed"
                     ? "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300"
                     : ""
                 }
@@ -247,80 +278,6 @@ export default function VideoViewer({
                 originalBlobId={video.sourceBlob}
               />
             </div>
-            
-
-            {/*
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "12px 20px",
-                marginTop: "16px",
-                position: "relative",
-                top: "-10px",
-              }}
-              >
-              
-              <Field orientation="horizontal">
-                <Checkbox 
-                  id="diarisation-checkbox" 
-                  name="diarisation-checkbox" 
-                  checked={
-                    video.diarizationTotalTasks != null &&
-                    video.diarizationCompletedTasks==video.diarizationTotalTasks
-                    }
-                  />
-                <FieldLabel htmlFor="diarisation-checkbox">
-                  Diarisation: {video.diarizationCompletedTasks} / {video.diarizationTotalTasks}
-                </FieldLabel>
-              </Field>
-
-              
-              <Field orientation="horizontal">
-                <Checkbox 
-                  id="translation-checkbox"
-                  name="translation-checkbox" 
-                  checked={
-                    video.translationTotalTasks != null &&
-                    video.translationCompletedTasks === video.translationTotalTasks
-                  }
-                />
-                <FieldLabel htmlFor="translation-checkbox">
-                  Translation: {video.translationCompletedTasks} / {video.translationTotalTasks}
-                </FieldLabel>
-              </Field>
-
-              
-              <Field orientation="horizontal">
-                <Checkbox 
-                  id="tts-checkbox" 
-                  name="tts-checkbox" 
-                  checked={
-                    video.ttsTotalTasks != null &&
-                    video.ttsCompletedTasks==video.ttsTotalTasks
-                    }
-                  />
-                <FieldLabel htmlFor="tts-checkbox">
-                  Text-To-Speech: {video.ttsCompletedTasks} / {video.ttsTotalTasks}
-                </FieldLabel>
-              </Field>
-
-              
-              <Field orientation="horizontal">
-                <Checkbox 
-                  id="reconstruction-checkbox" 
-                  name="reconstruction-checkbox" 
-                  checked={
-                    video.reconstructionTotalTasks != null &&
-                    video.reconstructionCompletedTasks==video.reconstructionTotalTasks
-                    }
-                  />
-                <FieldLabel htmlFor="reconstruction-checkbox">
-                  Reconstruction: {video.reconstructionCompletedTasks} / {video.reconstructionTotalTasks}
-                </FieldLabel>
-              </Field>
-            </div> 
-            */}
           </div>
         </div>
       </div>

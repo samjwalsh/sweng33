@@ -281,4 +281,29 @@ export const videoRouter = createTRPCRouter({
         url: `${blobClient.url}?${sasToken}`,
       };
     }),
+  
+  getVideoProgress: protectedProcedure
+    .input(
+      z.object({
+        videoId: z.string().min(1),
+      })
+    )
+    .query(async ({ctx, input}) => {
+      const video = await ctx.db.query.videos.findFirst({   //find first row in the videos table that matches videoID
+        where: (videos, {eq}) => eq(videos.id, input.videoId),
+        columns: {                                          //returns the following columns from the videos table
+          id: true,
+          status: true,
+          diarizationCompletedTasks: true,
+          diarizationTotalTasks: true,
+          translationCompletedTasks: true,
+          translationTotalTasks: true,
+          ttsCompletedTasks: true,
+          ttsTotalTasks: true,
+          reconstructionCompletedTasks: true,
+          reconstructionTotalTasks: true,
+        }
+      })
+      return video
+    }),
 });
