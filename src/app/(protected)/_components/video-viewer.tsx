@@ -18,6 +18,10 @@ import { api } from "@/trpc/react";
 import { getLanguageNameForDisplay } from "@/lib/languages";
 import { Progress } from "@/components/ui/progress";
 import { Field, FieldLabel } from "@/components/ui/field";
+import {
+  deriveVideoProgress,
+  type VideoProcessingStatus,
+} from "@/lib/video-progress";
 
 /*
 
@@ -67,75 +71,10 @@ export default function VideoViewer({
     void utils.video.getMyVideos.invalidate();
   }, [progress?.status, utils.video.getMyVideos]);
 
-  // Returns the current task while work is in progress.
-  const currentTask = () => {
-    if (liveVideo.status === "done") {
-      return null;
-    }
-
-    if (
-      liveVideo.diarizationTotalTasks != null &&
-      liveVideo.diarizationCompletedTasks != null &&
-      liveVideo.diarizationCompletedTasks < liveVideo.diarizationTotalTasks
-    ) {
-      return "Diarisation";
-    } else if (
-      liveVideo.translationTotalTasks != null &&
-      liveVideo.translationCompletedTasks != null &&
-      liveVideo.translationCompletedTasks < liveVideo.translationTotalTasks
-    ) {
-      return "Translation";
-    } else if (
-      liveVideo.ttsTotalTasks != null &&
-      liveVideo.ttsCompletedTasks != null &&
-      liveVideo.ttsCompletedTasks < liveVideo.ttsTotalTasks
-    ) {
-      return "Text-To-Speech";
-    } else if (
-      liveVideo.reconstructionTotalTasks != null &&
-      liveVideo.reconstructionCompletedTasks != null &&
-      liveVideo.reconstructionCompletedTasks <
-        liveVideo.reconstructionTotalTasks
-    ) {
-      return "Reconstruction";
-    } else {
-      return "Not Started";
-    }
-  };
-
-  //returns the percentage of tasks completed
-  const getTaskCounts = () => {
-    const totalTasks =
-      (liveVideo.diarizationTotalTasks ?? 0) +
-      (liveVideo.translationTotalTasks ?? 0) +
-      (liveVideo.ttsTotalTasks ?? 0) +
-      (liveVideo.reconstructionTotalTasks ?? 0);
-
-    const completedTasks =
-      (liveVideo.diarizationCompletedTasks ?? 0) +
-      (liveVideo.translationCompletedTasks ?? 0) +
-      (liveVideo.ttsCompletedTasks ?? 0) +
-      (liveVideo.reconstructionCompletedTasks ?? 0);
-
-    const safeTotalTasks = Math.max(0, totalTasks);
-    const safeCompletedTasks = Math.min(
-      Math.max(0, completedTasks),
-      safeTotalTasks,
-    );
-
-    return { completedTasks: safeCompletedTasks, totalTasks: safeTotalTasks };
-  };
-
-  const taskCompletionPercent = (): number => {
-    const { completedTasks, totalTasks } = getTaskCounts();
-
-    if (liveVideo.status === "done") return 100;
-    if (totalTasks === 0) return 0;
-    return Math.round((completedTasks / totalTasks) * 100);
-  };
-
-  const taskCounts = getTaskCounts();
-  const taskLabel = currentTask();
+  const derivedProgress = deriveVideoProgress(
+    liveVideo.status as VideoProcessingStatus,
+    liveVideo,
+  );
 
   const handleResendIngest = async () => {
     const result = await resendIngest.mutateAsync({ id: video.id });
@@ -289,20 +228,32 @@ export default function VideoViewer({
             {/* Progress on translation for the user */}
             <div style={{ marginTop: "30px" }}>
               <Field className="w-full max-w-sm">
-                <Progress
-                  value={taskCompletionPercent()}
-                  id="progress-upload"
-                />
-                <FieldLabel htmlFor="progress-upload">
-                  {taskLabel && <span>{taskLabel}</span>}
-                  {liveVideo.status !== "done" && (
-                    <span className="text-muted-foreground ml-2 text-xs">
-                      {taskCounts.completedTasks}/{taskCounts.totalTasks}
-                    </span>
-                  )}
-                  <span className="ml-auto">{taskCompletionPercent()}%</span>
+                <Progress value={derivedProgress.overallPercent} id="progress-total" />
+                <FieldLabel htmlFor="progress-total">
+                  <span>{derivedProgress.summaryLabel}</span>
+                  <span className="text-muted-foreground ml-2 text-xs">
+                    {derivedProgress.totalCompleted}/{derivedProgress.totalTasks}
+                  </span>
+                  <span className="ml-auto">{derivedProgress.overallPercent}%</span>
                 </FieldLabel>
               </Field>
+
+              <div style={{ marginTop: "14px", display: "grid", gap: "10px" }}>
+                {derivedProgress.stages.map((stage) => (
+                  <Field key={stage.key} className="w-full max-w-sm">
+                    <FieldLabel htmlFor={`progress-stage-${stage.key}`}>
+                      <span>{stage.label}</span>
+                      <span className="text-muted-foreground ml-auto text-xs">
+                        {stage.completed}/{stage.total}
+                      </span>
+                    </FieldLabel>
+                    <Progress
+                      value={stage.percent}
+                      id={`progress-stage-${stage.key}`}
+                    />
+                  </Field>
+                ))}
+              </div>
             </div>
 
             <div
