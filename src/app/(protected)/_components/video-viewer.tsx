@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import VideoPlayer from "./video-player";
 import { DownloadVideo } from "@/app/_components/download-video";
+import { api } from "@/trpc/react";
+import { getLanguageNameForDisplay } from "@/lib/languages";
 /*
 
 Main thing is that there is a prominent download button for the video, but you would probably expect to be able to see all of the info about it like when you uploaded it and maybe a player for the video
@@ -29,10 +31,19 @@ export default function VideoViewer({
   onDeleteVideo: (videoId: string) => Promise<void>;
   isDeleting?: boolean;
 }) {
+  const resendIngest = api.video.resendIngest.useMutation();
+
   const handleDeleteVideo = async () => {
     const confirmed = window.confirm("Delete this video?");
     if (!confirmed) return;
     await onDeleteVideo(video.id);
+  };
+
+  const handleResendIngest = async () => {
+    const result = await resendIngest.mutateAsync({ id: video.id });
+    if (!result.sent) {
+      window.alert("Failed to resend ingest message. Check server logs.");
+    }
   };
   return (
     <div style={{ padding: "40px" }}>
@@ -92,9 +103,13 @@ export default function VideoViewer({
             {/* Video Details */}
             <div style={{ marginTop: "10px", fontSize: "14px", color: "#555" }}>
               <p>Uploaded: {new Date(video.createdAt).toLocaleDateString()}</p>
-              <p>Source Language: {video.sourceLanguage.toUpperCase()}</p>
               <p>
-                Destination Language: {video.destLanguage.toLocaleUpperCase()}
+                Source Language:{" "}
+                {getLanguageNameForDisplay(video.sourceLanguage)}
+              </p>
+              <p>
+                Destination Language:{" "}
+                {getLanguageNameForDisplay(video.destLanguage)}
               </p>
             </div>
           </div>
@@ -169,6 +184,17 @@ export default function VideoViewer({
                 completedBlobId={video.completedBlob}
                 originalBlobId={video.sourceBlob}
               />
+            </div>
+
+            <div style={{ marginTop: "16px" }}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void handleResendIngest()}
+                disabled={resendIngest.isPending}
+              >
+                {resendIngest.isPending ? "Resending..." : "Resend ingest"}
+              </Button>
             </div>
           </div>
         </div>

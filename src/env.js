@@ -18,6 +18,7 @@ export const env = createEnv({
     AZURE_STORAGE_ACCOUNT: z.string(),
     AZURE_STORAGE_KEY: z.string(),
     AZURE_STORAGE_CONTAINER: z.string(),
+    KAFKA_BOOTSTRAP_SERVER: z.string(),
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
@@ -45,6 +46,7 @@ export const env = createEnv({
     AZURE_STORAGE_ACCOUNT: process.env.AZURE_STORAGE_ACCOUNT,
     AZURE_STORAGE_KEY: process.env.AZURE_STORAGE_KEY,
     AZURE_STORAGE_CONTAINER: process.env.AZURE_STORAGE_CONTAINER,
+    KAFKA_BOOTSTRAP_SERVER: process.env.KAFKA_BOOTSTRAP_SERVER,
     NODE_ENV: process.env.NODE_ENV,
   },
   /**

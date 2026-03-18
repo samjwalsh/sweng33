@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import type { Video } from "@/lib/video-type";
 import { Badge } from "@/components/ui/badge";
+import { getLanguageNameForDisplay } from "@/lib/languages";
 export default function VideosSidebar({
   videos,
   activeVideo,
@@ -62,9 +63,9 @@ export default function VideosSidebar({
                 <CardContent>
                   <CardTitle className="text-md">{video.title}</CardTitle>
                   <CardDescription className="flex flex-row gap-2">
-                    <div>{video.sourceLanguage}</div>
+                    <div>{getLanguageNameForDisplay(video.sourceLanguage)}</div>
                     {"->"}
-                    <div>{video.destLanguage}</div>
+                    <div>{getLanguageNameForDisplay(video.destLanguage)}</div>
                   </CardDescription>
                   <CardDescription className="text-sm">
                     Uploaded: {new Date(video.createdAt).toLocaleDateString()}

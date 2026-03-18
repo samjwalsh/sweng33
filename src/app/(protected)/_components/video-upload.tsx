@@ -2,7 +2,11 @@
 
 import * as React from "react";
 
-import { type LanguageName, languageValues } from "@/lib/languages";
+import {
+  type LanguageCode,
+  languageOptions,
+  getLanguageNameForDisplay,
+} from "@/lib/languages";
 import type { Video } from "@/lib/video-type";
 
 import { Button } from "@/components/ui/button";
@@ -26,10 +30,10 @@ export default function VideoUpload({
 }) {
   const [title, setTitle] = React.useState("");
   const [file, setFile] = React.useState<File | null>(null);
-  const [sourceLanguage, setSourceLanguage] = React.useState<LanguageName | "">(
+  const [sourceLanguage, setSourceLanguage] = React.useState<LanguageCode | "">(
     "",
   );
-  const [destLanguage, setDestLanguage] = React.useState<LanguageName | "">("");
+  const [destLanguage, setDestLanguage] = React.useState<LanguageCode | "">("");
   const [uploadError, setUploadError] = React.useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = React.useState(0);
   const [uploadStatus, setUploadStatus] = React.useState<
@@ -225,17 +229,17 @@ export default function VideoUpload({
               <Label className="font-medium">Source language</Label>
               <Select
                 value={sourceLanguage}
-                onValueChange={(languageName) =>
-                  setSourceLanguage(languageName as LanguageName)
+                onValueChange={(languageCode) =>
+                  setSourceLanguage(languageCode as LanguageCode)
                 }
               >
                 <SelectTrigger className="h-11 w-full">
                   <SelectValue placeholder="Select source" />
                 </SelectTrigger>
                 <SelectContent>
-                  {languageValues.map((name) => (
-                    <SelectItem key={name} value={name}>
-                      {name}
+                  {languageOptions.map((option) => (
+                    <SelectItem key={option.code} value={option.code}>
+                      {getLanguageNameForDisplay(option.code)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -247,17 +251,17 @@ export default function VideoUpload({
               <Label className="font-medium">Destination language</Label>
               <Select
                 value={destLanguage}
-                onValueChange={(languageName) =>
-                  setDestLanguage(languageName as LanguageName)
+                onValueChange={(languageCode) =>
+                  setDestLanguage(languageCode as LanguageCode)
                 }
               >
                 <SelectTrigger className="h-11 w-full">
                   <SelectValue placeholder="Select destination" />
                 </SelectTrigger>
                 <SelectContent>
-                  {languageValues.map((name) => (
-                    <SelectItem key={name} value={name}>
-                      {name}
+                  {languageOptions.map((option) => (
+                    <SelectItem key={option.code} value={option.code}>
+                      {getLanguageNameForDisplay(option.code)}
                     </SelectItem>
                   ))}
                 </SelectContent>
