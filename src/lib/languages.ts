@@ -1,116 +1,72 @@
-export enum LanguageCode {
-  Arabic = "ar",
-  Bangla = "bn",
-  Bulgarian = "bg",
-  Catalan = "ca",
-  ChineseSimplified = "zh-Hans",
-  ChineseTraditional = "zh-Hant",
-  Croatian = "hr",
-  Czech = "cs",
-  Danish = "da",
-  Dutch = "nl",
-  English = "en",
-  Estonian = "et",
-  Filipino = "fil",
-  Finnish = "fi",
-  French = "fr",
-  FrenchCanada = "fr-ca",
-  German = "de",
-  Greek = "el",
-  Gujarati = "gu",
-  Hebrew = "he",
-  Hindi = "hi",
-  Hungarian = "hu",
-  Icelandic = "is",
-  Indonesian = "id",
-  Italian = "it",
-  Japanese = "ja",
-  Kannada = "kn",
-  Korean = "ko",
-  Latvian = "lv",
-  Lithuanian = "lt",
-  Malayalam = "ml",
-  Marathi = "mr",
-  NorwegianBokmal = "nb",
-  Persian = "fa",
-  Polish = "pl",
-  PortugueseBrazil = "pt",
-  PortuguesePortugal = "pt-pt",
-  Punjabi = "pa",
-  Romanian = "ro",
-  Russian = "ru",
-  SerbianCyrillic = "sr-Cyrl",
-  Slovak = "sk",
-  Slovenian = "sl",
-  Spanish = "es",
-  SwahiliLatin = "sw",
-  Swedish = "sv",
-  Tamil = "ta",
-  Telugu = "te",
-  Thai = "th",
-  Turkish = "tr",
-  Ukrainian = "uk",
-  Urdu = "ur",
-  Vietnamese = "vi",
-}
+import azureLanguages from "@/lib/azure-languages.json";
 
-export const languageCodeValues = Object.values(LanguageCode) as [
-  LanguageCode,
-  ...LanguageCode[],
-];
+export const languageCodes = [
+  "zh-Hans",
+  "en",
+  "ja",
+  "ko",
+  "de",
+  "fr",
+  "ru",
+  "pt",
+  "es",
+  "it",
+] as const;
 
-export const languageCodeToName: Record<LanguageCode, string> = {
-  [LanguageCode.Arabic]: "Arabic",
-  [LanguageCode.Bangla]: "Bangla",
-  [LanguageCode.Bulgarian]: "Bulgarian",
-  [LanguageCode.Catalan]: "Catalan",
-  [LanguageCode.ChineseSimplified]: "Chinese Simplified",
-  [LanguageCode.ChineseTraditional]: "Chinese Traditional",
-  [LanguageCode.Croatian]: "Croatian",
-  [LanguageCode.Czech]: "Czech",
-  [LanguageCode.Danish]: "Danish",
-  [LanguageCode.Dutch]: "Dutch",
-  [LanguageCode.English]: "English",
-  [LanguageCode.Estonian]: "Estonian",
-  [LanguageCode.Filipino]: "Filipino",
-  [LanguageCode.Finnish]: "Finnish",
-  [LanguageCode.French]: "French",
-  [LanguageCode.FrenchCanada]: "French (Canada)",
-  [LanguageCode.German]: "German",
-  [LanguageCode.Greek]: "Greek",
-  [LanguageCode.Gujarati]: "Gujarati",
-  [LanguageCode.Hebrew]: "Hebrew",
-  [LanguageCode.Hindi]: "Hindi",
-  [LanguageCode.Hungarian]: "Hungarian",
-  [LanguageCode.Icelandic]: "Icelandic",
-  [LanguageCode.Indonesian]: "Indonesian",
-  [LanguageCode.Italian]: "Italian",
-  [LanguageCode.Japanese]: "Japanese",
-  [LanguageCode.Kannada]: "Kannada",
-  [LanguageCode.Korean]: "Korean",
-  [LanguageCode.Latvian]: "Latvian",
-  [LanguageCode.Lithuanian]: "Lithuanian",
-  [LanguageCode.Malayalam]: "Malayalam",
-  [LanguageCode.Marathi]: "Marathi",
-  [LanguageCode.NorwegianBokmal]: "Norwegian Bokmål",
-  [LanguageCode.Persian]: "Persian",
-  [LanguageCode.Polish]: "Polish",
-  [LanguageCode.PortugueseBrazil]: "Portuguese (Brazil)",
-  [LanguageCode.PortuguesePortugal]: "Portuguese (Portugal)",
-  [LanguageCode.Punjabi]: "Punjabi",
-  [LanguageCode.Romanian]: "Romanian",
-  [LanguageCode.Russian]: "Russian",
-  [LanguageCode.SerbianCyrillic]: "Serbian (Cyrillic)",
-  [LanguageCode.Slovak]: "Slovak",
-  [LanguageCode.Slovenian]: "Slovenian",
-  [LanguageCode.Spanish]: "Spanish",
-  [LanguageCode.SwahiliLatin]: "Swahili (Latin)",
-  [LanguageCode.Swedish]: "Swedish",
-  [LanguageCode.Tamil]: "Tamil",
-  [LanguageCode.Telugu]: "Telugu",
-  [LanguageCode.Thai]: "Thai",
-  [LanguageCode.Turkish]: "Turkish",
-  [LanguageCode.Ukrainian]: "Ukrainian",
-  [LanguageCode.Urdu]: "Urdu",
-  [LanguageCode.Vietnamese]: "Vietnamese",
+export type LanguageCode = (typeof languageCodes)[number];
+
+type AzureLanguageRecord = {
+  name: string;
+  native_name: string;
+  script: string | null;
+  dir: "ltr" | "rtl";
+};
+
+type AzureLanguages = Record<string, AzureLanguageRecord>;
+
+const azureLanguageMap = azureLanguages as AzureLanguages;
+
+const resolveLanguageName = (code: LanguageCode) =>
+  azureLanguageMap[code]?.name ?? code;
+
+export const languageNameByCode: Record<LanguageCode, string> =
+  languageCodes.reduce(
+    (acc, code) => {
+      acc[code] = resolveLanguageName(code);
+      return acc;
+    },
+    {} as Record<LanguageCode, string>,
+  );
+
+export const languageValues = languageCodes;
+
+export const languageOptions = languageCodes.map((code) => ({
+  code,
+  name: languageNameByCode[code],
+}));
+
+const legacyLanguageNameByCode = {
+  Chinese: "Chinese",
+  English: "English",
+  Japanese: "Japanese",
+  Korean: "Korean",
+  German: "German",
+  French: "French",
+  Russian: "Russian",
+  Portuguese: "Portuguese",
+  Spanish: "Spanish",
+  Italian: "Italian",
+} as const;
+
+export const getLanguageNameForDisplay = (value: string | null | undefined) => {
+  if (!value) return "Unknown";
+  if (value in languageNameByCode) {
+    return languageNameByCode[value as LanguageCode];
+  }
+  if (value in legacyLanguageNameByCode) {
+    return legacyLanguageNameByCode[
+      value as keyof typeof legacyLanguageNameByCode
+    ];
+  }
+  return "Unknown";
 };

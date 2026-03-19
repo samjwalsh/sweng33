@@ -1,6 +1,6 @@
 {
-  "id": "6af6d6ba-2584-4f34-9614-472f31e0c3a3",
-  "prevId": "1679b73c-6b69-4c88-82f8-092304eccf76",
+  "id": "52220e94-d469-40a6-b006-140b92ada171",
+  "prevId": "455d24b8-9e20-4f01-bef4-8334a96c4fa7",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -414,6 +414,54 @@
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
+        },
+        "diarization_completed_tasks": {
+          "name": "diarization_completed_tasks",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "diarization_total_tasks": {
+          "name": "diarization_total_tasks",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "translation_completed_tasks": {
+          "name": "translation_completed_tasks",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "translation_total_tasks": {
+          "name": "translation_total_tasks",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tts_completed_tasks": {
+          "name": "tts_completed_tasks",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tts_total_tasks": {
+          "name": "tts_total_tasks",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reconstruction_completed_tasks": {
+          "name": "reconstruction_completed_tasks",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reconstruction_total_tasks": {
+          "name": "reconstruction_total_tasks",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},
@@ -453,7 +501,17 @@
         "Russian",
         "Portuguese",
         "Spanish",
-        "Italian"
+        "Italian",
+        "zh-Hans",
+        "en",
+        "ja",
+        "ko",
+        "de",
+        "fr",
+        "ru",
+        "pt",
+        "es",
+        "it"
       ]
     },
     "public.video_status": {

@@ -1,32 +1,76 @@
 import { relations } from "drizzle-orm";
 import {
   boolean,
-  index,
   pgEnum,
   pgTable,
   pgTableCreator,
   text,
   timestamp,
+  integer,
+  doublePrecision,
 } from "drizzle-orm/pg-core";
-import { languageCodeValues } from "@/lib/languages";
+import { languageCodes } from "@/lib/languages";
 
 export const createTable = pgTableCreator((name) => `pg-drizzle_${name}`);
 
-export const languageCodeEnum = pgEnum("language_code", languageCodeValues);
+const legacyLanguageNames = [
+  "Chinese",
+  "English",
+  "Japanese",
+  "Korean",
+  "German",
+  "French",
+  "Russian",
+  "Portuguese",
+  "Spanish",
+  "Italian",
+] as const;
 
-export const videos = createTable(
-  "videos",
-  (d) => ({
-    id: text("id").primaryKey(),
-    title: text("title").notNull(),
-    createdById: text("created_by_id").notNull().references(() => user.id),
-    createdAt: timestamp("created_at").$default(() => new Date()).notNull(),
-    blob: text("blob").notNull(),
-    status: text("status"),
-    sourceLanguage: languageCodeEnum("source_language").notNull(),
-    destLanguage: languageCodeEnum("dest_language").notNull(),
-  })
-)
+export const languageEnum = pgEnum("language_code", [
+  ...legacyLanguageNames,
+  ...languageCodes,
+]);
+
+export const videoStatusEnum = pgEnum("video_status", [
+  "queued",
+  "processing",
+  "done",
+  "failed",
+]);
+
+export const videos = createTable("videos", (d) => ({
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  createdById: text("created_by_id")
+    .notNull()
+    .references(() => user.id),
+  createdAt: timestamp("created_at")
+    .$default(() => new Date())
+    .notNull(),
+  sourceBlob: text("blob").notNull(),
+  completedBlob: text("completed_blob"),
+  status: videoStatusEnum("status").default("queued").notNull(),
+  sourceLanguage: languageEnum("source_language").notNull(),
+  destLanguage: languageEnum("dest_language").notNull(),
+
+  diarizationCompletedTasks: integer("diarization_completed_tasks"),
+  diarizationTotalTasks: integer("diarization_total_tasks"),
+  translationCompletedTasks: integer("translation_completed_tasks"),
+  translationTotalTasks: integer("translation_total_tasks"),
+  ttsCompletedTasks: integer("tts_completed_tasks"),
+  ttsTotalTasks: integer("tts_total_tasks"),
+  reconstructionCompletedTasks: integer("reconstruction_completed_tasks"),
+  reconstructionTotalTasks: integer("reconstruction_total_tasks"),
+}));
+
+export const tts = createTable("tts", (d) => ({
+  src_blob: text("src_blob"),
+  gen_blob: text("gen_blob"),
+  segment_id: integer("segment_id"),
+  speaker_id: text("speaker_id"),
+  start: doublePrecision("start"),
+  end: doublePrecision("end"),
+}));
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
