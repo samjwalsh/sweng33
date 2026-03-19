@@ -9,6 +9,11 @@ export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg", // or "pg" or "mysql"
   }),
+  account: {
+    accountLinking: {
+      trustedProviders: ["google", "microsoft"],
+    },
+  },
   emailAndPassword: {
     enabled: true,
   },
