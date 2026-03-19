@@ -21,10 +21,10 @@ export default function SignInPage() {
           <Card>
             <CardHeader className="text-center">
               <CardTitle className="text-xl">Sign in</CardTitle>
-              <CardDescription>Login with your Google account</CardDescription>
+              <CardDescription>Sign in with your Google or Microsoft account</CardDescription>
             </CardHeader>
             <CardContent>
-              <div>
+              <div className="flex flex-col gap-2">
                 <Button
                   className="w-full"
                   onClick={async () => {
@@ -36,6 +36,18 @@ export default function SignInPage() {
                 >
                   Sign in with Google
                 </Button>
+                <Button
+                
+                className="w-full"
+                onClick={async () => {
+                  await authClient.signIn.social({
+                    provider: "microsoft",
+                    callbackURL: "/",
+                  });
+                }}
+              >
+                Sign in with Microsoft
+              </Button>
               </div>
             </CardContent>
           </Card>

@@ -14,6 +14,8 @@ export const env = createEnv({
     BETTER_AUTH_URL: z.string().url(),
     GOOGLE_CLIENT_ID: z.string(),
     GOOGLE_CLIENT_SECRET: z.string(),
+    MICROSOFT_CLIENT_ID: z.string(),
+    MICROSOFT_CLIENT_SECRET: z.string(),
     DATABASE_URL: z.string().url(),
     AZURE_STORAGE_ACCOUNT: z.string(),
     AZURE_STORAGE_KEY: z.string(),
@@ -48,6 +50,8 @@ export const env = createEnv({
     AZURE_STORAGE_CONTAINER: process.env.AZURE_STORAGE_CONTAINER,
     KAFKA_BOOTSTRAP_SERVER: process.env.KAFKA_BOOTSTRAP_SERVER,
     NODE_ENV: process.env.NODE_ENV,
+    MICROSOFT_CLIENT_ID: process.env.MICROSOFT_CLIENT_ID,
+    MICROSOFT_CLIENT_SECRET: process.env.MICROSOFT_CLIENT_SECRET,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
