@@ -34,6 +34,43 @@ export type DerivedVideoProgress = {
   overallPercent: number;
   currentStageLabel: string | null;
   summaryLabel: string;
+}; 
+
+export const deriveVideoStatus = (
+  video: VideoTaskCounts & {
+    status?: VideoProcessingStatus;
+    completedBlob?: string | null;
+  },
+): VideoProcessingStatus => {
+  if (video.status === "failed") {
+    return "failed";
+  }
+
+  if (video.status === "done") {
+    return "done";
+  }
+
+  const totalCompleted =
+    toSafeNonNegative(video.diarizationCompletedTasks) +
+    toSafeNonNegative(video.translationCompletedTasks) +
+    toSafeNonNegative(video.ttsCompletedTasks) +
+    toSafeNonNegative(video.reconstructionCompletedTasks);
+
+  const totalTasks =
+    toSafeNonNegative(video.diarizationTotalTasks) +
+    toSafeNonNegative(video.translationTotalTasks) +
+    toSafeNonNegative(video.ttsTotalTasks) +
+    toSafeNonNegative(video.reconstructionTotalTasks);
+
+  if (video.completedBlob && totalTasks <= totalCompleted) {
+    return "done";
+  }
+
+  if (totalTasks > 0) {
+    return "processing";
+  }
+
+  return "queued";
 };
 
 const STAGE_CONFIG: StageConfig[] = [
