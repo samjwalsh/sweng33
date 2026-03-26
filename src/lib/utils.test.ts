@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 describe("cn", () => {
   it("combines class names from mixed input types", () => {
-    expect(
+    expect( 
       cn("px-2", ["py-1", false && "hidden"], { block: true, hidden: false }),
     ).toBe("px-2 py-1 block");
   });
