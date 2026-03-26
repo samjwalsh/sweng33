@@ -180,7 +180,6 @@ export const videoRouter = createTRPCRouter({
           status: "queued",
           sourceLanguage: input.sourceLanguage,
           destLanguage: input.destLanguage,
-          diarizationTotalTasks: 1,
         })
         .returning();
 
