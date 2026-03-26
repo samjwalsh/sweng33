@@ -11,6 +11,7 @@ import {
 import { randomUUID } from "crypto";
 import path from "path";
 import { languageCodes } from "@/lib/languages";
+import { deriveVideoStatus } from "@/lib/video-progress";
 import { videos } from "@/server/db/schema";
 import { desc, eq } from "drizzle-orm";
 import { sendIngestMessage } from "@/server/kafka/producer";
@@ -84,13 +85,20 @@ export const videoRouter = createTRPCRouter({
       .where(eq(videos.createdById, ctx.session.user.id))
       .orderBy(desc(videos.createdAt));
 
-    return videosData.map((video) => ({
-      ...video,
-      sourceBlob: normalizeBlobName(video.sourceBlob),
-      completedBlob: video.completedBlob
-        ? normalizeBlobName(video.completedBlob)
-        : null,
-    }));
+    return videosData.map((video) => {
+      const normalized = {
+        ...video,
+        sourceBlob: normalizeBlobName(video.sourceBlob),
+        completedBlob: video.completedBlob
+          ? normalizeBlobName(video.completedBlob)
+          : null,
+      };
+
+      return {
+        ...normalized,
+        status: deriveVideoStatus(normalized),
+      };
+    });
   }),
   createUpload: protectedProcedure
     .input(
@@ -172,7 +180,6 @@ export const videoRouter = createTRPCRouter({
           status: "queued",
           sourceLanguage: input.sourceLanguage,
           destLanguage: input.destLanguage,
-          diarizationTotalTasks: 1,
         })
         .returning();
 
@@ -351,6 +358,7 @@ export const videoRouter = createTRPCRouter({
           //returns the following columns from the videos table
           id: true,
           status: true,
+          completedBlob: true,
           diarizationCompletedTasks: true,
           diarizationTotalTasks: true,
           translationCompletedTasks: true,
@@ -361,6 +369,17 @@ export const videoRouter = createTRPCRouter({
           reconstructionTotalTasks: true,
         },
       });
-      return video;
+
+      if (!video) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Video not found",
+        });
+      }
+
+      return {
+        ...video,
+        status: deriveVideoStatus(video),
+      };
     }),
 });
